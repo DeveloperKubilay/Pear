@@ -13,3 +13,8 @@ browser.Events.on("tabcreated", (msg) => {
     console.log("[Pear] Tab oluşturuldu:", JSON.stringify(msg));
 });
     
+
+        const sonuc = await newtab.evaluate((a, b) => {
+        return a + b;
+    }, 5, 10);
+    

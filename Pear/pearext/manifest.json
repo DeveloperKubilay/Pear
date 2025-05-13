@@ -19,6 +19,7 @@
     "scripting",
     "tabs",
     "nativeMessaging",
+    "webRequest", "webRequestBlocking",
     "cookies",
     "<all_urls>"
   ]

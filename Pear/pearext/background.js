@@ -1,74 +1,99 @@
 chrome.runtime.onInstalled.addListener(async () => {
-      const response = await fetch(chrome.runtime.getURL("settings.json"));
-      const settings = await response.json();
-      console.log("Ayarlar:", settings);
-/*
-      chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-        if (request.type === "selam") {
-          console.log("Content script'ten geldi:", request.msg);
-      
-          sendResponse("Eyvallah, aldım kral 👑");
-        }
-        return true;
-      });*/
+  const response = await fetch(chrome.runtime.getURL("settings.json"));
+  const settings = await response.json();
+  console.log("Ayarlar:", settings);
+  /*
+        chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+          if (request.type === "selam") {
+            console.log("Content script'ten geldi:", request.msg);
+        
+            sendResponse("Eyvallah, aldım kral 👑");
+          }
+          return true;
+        });*/
 
-      //proxy desteği ekle
+  //proxy desteği ekle
 
 
-chrome.tabs.onCreated.addListener((tab) => {
-  socket.send(`${JSON.stringify({event:"tabcreated",tab})}`);
-  fetch('http://localhost:80')
-});
+  chrome.tabs.onCreated.addListener((tab) => {
+    socket.send(`${JSON.stringify({ event: "tabcreated", tab })}`);
+    fetch('http://localhost:80')
+  });
 
   let socket = null;
   function connectWebSocket() {
-    socket = new WebSocket('ws://localhost:'+settings.port);
-    
-    socket.onopen = function(event) {
-      socket.send(`${JSON.stringify({connected:true})}`);
+    socket = new WebSocket('ws://localhost:' + settings.port);
+
+    socket.onopen = function (event) {
+      socket.send(`${JSON.stringify({ connected: true })}`);
       console.log('WebSocket bağlantısı kuruldu');
     };
-    
-    socket.onmessage = function(event) {
+
+    socket.onmessage = function (event) {
       const data = JSON.parse(event.data);
       console.log('WebSocket mesajı alındı:', data);
       event = data;
 
-      if(event.getcookie){
-        chrome.cookies.getAll({domain: event.getcookie}, function(cookies) {
-          socket.send(`${JSON.stringify({session:event.session,cookies:cookies})}`);
+      if (event.getcookie) {
+        chrome.cookies.getAll({ domain: event.getcookie }, function (cookies) {
+          socket.send(`${JSON.stringify({ session: event.session, cookies: cookies })}`);
         });
-      }else if(event.getallcookie){
-        chrome.cookies.getAll({}, function(cookies) {
-          socket.send(`${JSON.stringify({session:event.session,cookies:cookies})}`);
+      } else if (event.getallcookie) {
+        chrome.cookies.getAll({}, function (cookies) {
+          socket.send(`${JSON.stringify({ session: event.session, cookies: cookies })}`);
         });
-      }else if(event.setcookies){
+      } else if (event.setcookies) {
         event.setcookies.forEach(cookie => {
-          chrome.cookies.set(cookie, function(result) {
-            socket.send(`${JSON.stringify({session:event.session,cookies:result})}`);
+          chrome.cookies.set(cookie, function (result) {
+            socket.send(`${JSON.stringify({ session: event.session, cookies: result })}`);
           });
         });
       }
-      if(event.exit){
-            chrome.tabs.query({}, function(tabs) {
-                for (let tab of tabs) {
-                    chrome.tabs.remove(tab.id);
-                }
-            });
-      }else if(event.closetab){
+      if (event.exit) {
+        chrome.tabs.query({}, function (tabs) {
+          for (let tab of tabs) {
+            chrome.tabs.remove(tab.id);
+          }
+        });
+      } else if (event.closetab) {
         chrome.tabs.remove(event.closetab);
-      }else if(event.newPage){
+      } else if (event.newPage) {
         chrome.tabs.create({
           url: event.newPage, // Changed from event.opentab to event.newPage
           active: true,
-        }, function(tab) {
-          socket.send(`${JSON.stringify({session:event.session, tab})}`);
+        }, function (tab) {
+          if (event.waitLoad) {
+            const tabId = tab.id;
+            const listener = function (updatedTabId, changeInfo, updatedTab) {
+              if (updatedTabId === tabId && changeInfo.status === 'complete') {
+                socket.send(`${JSON.stringify({ session: event.session, tab: updatedTab, loaded: true })}`);
+                chrome.tabs.onUpdated.removeListener(listener);
+              }
+            };
+            chrome.tabs.onUpdated.addListener(listener);
+          } else
+            socket.send(`${JSON.stringify({ session: event.session, tab })}`);
         });
+      }else if (event.evaluate) {
+
+       try{
+            let argsAsString = JSON.stringify(event.args || []);
+            let executableCode = `(${event.code}).apply(null, ${argsAsString})`;
+    
+            chrome.tabs.executeScript(event.tab, {
+              code: executableCode
+            }, function(result) {
+              socket.send(`${JSON.stringify({ session: event.session, result: result[0] })}`);
+            });
+       }catch(e){
+        socket.send(`${JSON.stringify({ session: event.session, error: e.message })}`);
+        }
+        
       }
 
     };
-    socket.onerror = function(error) {};
-    socket.onclose = function(event) {setTimeout(connectWebSocket, 5000);};
+    socket.onerror = function (error) { };
+    socket.onclose = function (event) { setTimeout(connectWebSocket, 5000); };
   }
   connectWebSocket();
 
@@ -83,4 +108,19 @@ chrome.tabs.onCreated.addListener((tab) => {
             })
   */
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
 });

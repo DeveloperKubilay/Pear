@@ -12,10 +12,10 @@ module.exports = async function (app) {
       typeof app.browserPath == "string"
         ? app.browserPath
         : process.platform === "win32"
-        ? "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
-        : process.platform === "darwin"
-        ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-        : "/usr/bin/google-chrome",
+          ? "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+          : process.platform === "darwin"
+            ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+            : "/usr/bin/google-chrome",
 
     profileDir:
       typeof app.profileDir == "string"
@@ -60,13 +60,13 @@ module.exports = async function (app) {
     path.join(extensionDir, "settings.json"),
     "utf8"
   );
-  try{  settingsExtConfig = JSON.parse(settingsExtConfig); }catch{ settingsExtConfig = {} }
+  try { settingsExtConfig = JSON.parse(settingsExtConfig); } catch { settingsExtConfig = {} }
   settingsExtConfig.port = app.port;
   fs.writeFileSync(
     path.join(extensionDir, "settings.json"),
     JSON.stringify(settingsExtConfig, null, 2)
   );
-  
+
   const chromeFlags = [
     `--user-data-dir="${app.profileDir}"`,
     `--load-extension="${extensionDir}"`, // Uzantıyı yükle
@@ -81,15 +81,15 @@ module.exports = async function (app) {
 
   ];
 
-  if(app.viewport.width && app.viewport.height)
+  if (app.viewport.width && app.viewport.height)
     chromeFlags.push(`--window-size=${app.viewport.width},${app.viewport.height}`);
-  
-  if(app.useragent)
+
+  if (app.useragent)
     chromeFlags.push(`--user-agent=${app.useragent}`);
 
-  if(app.incognito)
+  if (app.incognito)
     chromeFlags.push(`--incognito`);
-  
+
   chromeFlags.push(...app.args);
 
 
@@ -98,13 +98,13 @@ module.exports = async function (app) {
       console.error(`❌ [Pear] failed to launch browser: ${error}`);
       return;
     }
-   if(app.debug){
-    if (stdout) console.log(`[Pear] stdout: ${stdout}`);
-    if (stderr) console.error(`[Pear] stderr: ${stderr}`);
-   }
+    if (app.debug) {
+      if (stdout) console.log(`[Pear] stdout: ${stdout}`);
+      if (stderr) console.error(`[Pear] stderr: ${stderr}`);
+    }
   });
 
-  async function sendmsg(x){
+  async function sendmsg(x) {
     const message = JSON.stringify(x);
     if (wss.clients.size > 0) {
       await wss.clients.forEach(async (client) => {
@@ -115,20 +115,20 @@ module.exports = async function (app) {
     }
   }
 
-  process.on('exit', async () =>    await sendmsg({ exit:true }));
+  process.on('exit', async () => await sendmsg({ exit: true }));
 
   process.on('SIGINT', async () => {
-    await sendmsg({ exit:true });
+    await sendmsg({ exit: true });
     process.exit(0);
   });
-  
+
   process.on('SIGTERM', async () => {
-       await sendmsg({ exit:true });
+    await sendmsg({ exit: true });
     process.exit(0);
   });
-  
+
   process.on('uncaughtException', async (err) => {
-       await sendmsg({ exit:true });
+    await sendmsg({ exit: true });
     process.exit(1);
   });
 
@@ -137,7 +137,7 @@ module.exports = async function (app) {
 
   let browserReadyResolve = null;
   const browserReadyPromise = new Promise((resolve) => {
-    if(browserStarted) {
+    if (browserStarted) {
       resolve(true);
     } else {
       browserReadyResolve = resolve;
@@ -150,22 +150,24 @@ module.exports = async function (app) {
     //if(app.debug) console.log("[Pear] ✅ A browser is ws connected");
 
     ws.on("message", (message) => {
-      if(app.debug) console.log(`📩 Mesaj alındı: ${message}`);
+      if (app.debug) console.log(`📩 Mesaj alındı: ${message}`);
       var parsedMessage = {};
       try {
         parsedMessage = JSON.parse(message);
-      } catch (error) { return;}
+      } catch (error) { return; }
 
-      if(parsedMessage.connected){
+      if (parsedMessage.connected) {
         browserStarted = true;
-        if(app.debug) console.log("[Pear] ✅ Browser started and connected");
+        if (app.debug) console.log("[Pear] ✅ Browser started and connected");
         // Notify any waiting promises that the browser has started
-        if(browserReadyResolve) {
+        if (browserReadyResolve) {
           browserReadyResolve(true);
           browserReadyResolve = null;
         }
       }
-      if(parsedMessage.event == "tabcreated"){
+
+      //events
+      if (parsedMessage.event == "tabcreated") {
         Events.emit("tabcreated", parsedMessage.tab);
       }
 
@@ -177,33 +179,31 @@ module.exports = async function (app) {
     });
 
     ws.on("close", () => {
-      if(app.debug) console.log("[Pear]🔌 Connection lost");
+      if (app.debug) console.log("[Pear]🔌 Connection lost");
     });
 
     ws.on("error", (error) => {
-      if(app.debug) console.error(`[Pear] ❌ WebSocket error: ${error.message}`);
+      if (app.debug) console.error(`[Pear] ❌ WebSocket error: ${error.message}`);
     });
   });
 
 
   const callbackmap = new Map()
 
-  function randomidgenerator(){
+  function randomidgenerator() {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   }
-  async function callbackmsg(x,y){
+  async function callbackmsg(x, y) {
     const session = randomidgenerator();
     x.session = session;
     const promise = new Promise((resolve, reject) => {
       callbackmap.set(session, { resolve, reject });
-      
-      // Add 10 second timeout
       setTimeout(() => {
-      if (callbackmap.has(session)) {
-        callbackmap.delete(session);
-        reject(new Error("Operation timed out after 10 seconds"));
-      }
-      }, y.timeout || 30 * 1000);
+        if (callbackmap.has(session)) {
+          callbackmap.delete(session);
+          reject(new Error("Operation timed out after 30 seconds"));
+        }
+      }, y?.timeout || 30 * 1000);
     });
     await sendmsg(x);
     return await promise;
@@ -213,21 +213,37 @@ module.exports = async function (app) {
 
   const out = {
     exit: async () => {
-        await sendmsg({ exit:true });
-        process.exit(0);
+      await sendmsg({ exit: true });
+      process.exit(0);
     },
-    newPage: async (x,y) => {
-      const data = await callbackmsg({ newPage: x || "newPage"}, y || {});
+    newPage: async (x, y) => {
+      const data = await callbackmsg({
+        newPage: x || "newPage",
+        waitLoad: y.waitLoad
+      }, y || {});
       data.tab.close = async () => await out.closeTab(data.tab.id);
+      data.tab.exit = data.tab.close;
+      data.tab.evaluate = async (fn, ...args) => {
+        if (typeof fn != "function") throw new Error("fn must be a function");
+        const result = await callbackmsg({
+          evaluate: true,
+          code: fn.toString(),
+          args: args,
+          tab: data.tab.id
+        });
+        if (result.error) throw new Error(result.error);
+        return result.result;
+      }
 
       return data.tab;
     },
     closeTab: async (x) => {
-      if(typeof x != "number") new Error("Tab ID must be a number")
+      if (typeof x != "number") new Error("Tab ID must be a number")
       return await callbackmsg({ closetab: x || "newPage" });
     },
-    Events:Events
+    Events: Events
   }
+  out.close = out.exit;
 
 
   return out;
