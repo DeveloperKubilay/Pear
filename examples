@@ -1,0 +1,15 @@
+    const newtab = await browser.newPage("https://www.google.com")
+    setTimeout(async () => {
+       
+        await newtab.close()
+    }, 5000)
+
+     await browser.close()
+    const browser = await PearBrowser({
+        profileDir: "./profile",
+        debug: true
+    });
+browser.Events.on("tabcreated", (msg) => {
+    console.log("[Pear] Tab oluşturuldu:", JSON.stringify(msg));
+});
+    

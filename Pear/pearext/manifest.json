@@ -1,0 +1,25 @@
+{
+  "manifest_version": 2,
+  "name": "Armut",
+  "version": "1.0",
+  "description": "Basit bir Chrome uzantısı",
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": true
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabs",
+    "nativeMessaging",
+    "cookies",
+    "<all_urls>"
+  ]
+}

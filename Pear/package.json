@@ -1,0 +1,26 @@
+{
+    "name": "pear",
+    "version": "0.1.0",
+    "description": "A lightweight alternative to Puppeteer for browser automation",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+        "browser",
+        "automation",
+        "puppeteer",
+        "alternative",
+        "web",
+        "scraping"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "tree-kill": "^1.2.2"
+    },
+    "engines": {
+        "node": ">=14.0.0"
+    }
+}
