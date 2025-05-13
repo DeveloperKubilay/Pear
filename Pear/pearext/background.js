@@ -3,6 +3,25 @@ chrome.runtime.onInstalled.addListener(async () => {
   const settings = await response.json();
 
   let socket = null;
+
+
+  var useragent = "";
+  chrome.webRequest.onBeforeSendHeaders.addListener(
+  function (details) {
+      if(!useragent) return;
+      const headers = details.requestHeaders;
+
+      for (let i = 0; i < headers.length; i++) {
+        if (headers[i].name.toLowerCase() === 'user-agent') {
+          headers[i].value = useragent;
+          break;
+        }
+      }
+      return { requestHeaders: headers };
+    },
+    { urls: ["<all_urls>"] },
+    ["blocking", "requestHeaders"]
+  );
   
   // WebSocket üzerinden mesaj göndermeyi kolaylaştıran yardımcı fonksiyon
   function sendSocketMessage(message) {
@@ -37,7 +56,11 @@ chrome.runtime.onInstalled.addListener(async () => {
         });
       });
     },
-    
+    setUserAgent: (event) => {
+      useragent = event.setUserAgent;
+      sendSocketMessage({ session: event.session, userAgent: event.userAgent });
+    },
+
     exit: () => {
       chrome.tabs.query({}, (tabs) => {
         tabs.forEach(tab => chrome.tabs.remove(tab.id));
@@ -53,7 +76,7 @@ chrome.runtime.onInstalled.addListener(async () => {
         url: event.newPage,
         active: true,
       }, (tab) => {
-        if (event.waitLoad) {
+        if (!event.dontwaitLoad) {
           handleTabLoading(tab.id, event.session);
         } else {
           sendSocketMessage({ session: event.session, tab });
@@ -87,10 +110,81 @@ chrome.runtime.onInstalled.addListener(async () => {
           sendSocketMessage({ session: event.session, result });
         });
       }
+    },
+
+    setViewport: (event) => {
+        const { tab, width, height } = event;
+        chrome.tabs.get(tab, (tabInfo) => {
+          if (chrome.runtime.lastError) {
+            sendSocketMessage({ 
+              session: event.session, 
+              error: chrome.runtime.lastError.message 
+            });
+            return;
+          }
+          chrome.windows.update(tabInfo.windowId, {
+            width: parseInt(width) + 16,
+            height: parseInt(height) + 88 
+          }, () => {
+            chrome.tabs.executeScript(tab, {
+              code: `
+                document.documentElement.style.width = '${parseInt(width)}px';
+                document.documentElement.style.height = '${parseInt(height)}px';
+                document.body.style.width = '${parseInt(width)}px';
+                document.body.style.height = '${parseInt(height)}px';
+
+                let viewport = document.querySelector('meta[name="viewport"]');
+                if (!viewport) {
+                  viewport = document.createElement('meta');
+                  viewport.name = 'viewport';
+                  document.head.appendChild(viewport);
+                }
+                viewport.content = 'width=${parseInt(width)}, height=${parseInt(height)}';
+              `
+            }, (result) => {
+              sendSocketMessage({ 
+                session: event.session
+              });
+            });
+          });
+        });
+    },    
+    
+    waitForSelector: (event) => {
+      const { tab, selector, timeout = event.timeout ?? 30000 } = event;
+      const startTime = Date.now();
+      
+      const checkElement = () => {
+        chrome.tabs.executeScript(tab, {
+          code: `!!document.querySelector("${selector.replace(/"/g, '\\"')}")`
+        }, (result) => {
+          if (chrome.runtime.lastError) return;
+          
+          if (result && result[0] === true) {
+            sendSocketMessage({ 
+              session: event.session, 
+              found: true 
+            });
+            return;
+          }
+          
+          if (Date.now() - startTime > timeout) {
+            sendSocketMessage({ 
+              session: event.session, 
+              error: `Timeout: Element "${selector}" not found within ${timeout}ms` 
+            });
+            return;
+          }
+          
+          setTimeout(checkElement, 100);
+        });
+      };
+      
+      checkElement();
     }
   };
 
-  // Tab yükleme işlemini takip etmek için yardımcı fonksiyon
+
   function handleTabLoading(tabId, sessionId) {
     const listener = (updatedTabId, changeInfo, updatedTab) => {
       if (updatedTabId === tabId && changeInfo.status === 'complete') {
@@ -109,9 +203,6 @@ chrome.runtime.onInstalled.addListener(async () => {
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('WebSocket mesajı alındı:', data);
-        
-        // Komut işleme mantığı - tek bir komut olarak ele al
         const commandType = Object.keys(data).find(key => 
           key !== 'session' && key !== 'args' && commandHandlers[key]
         );

@@ -34,7 +34,8 @@ module.exports = async function (app) {
     useragent: validateConfig(app.useragent, "", (val) => typeof val === "string"),
     viewport: validateConfig(app.viewport, {}, (val) => typeof val === "object"),
     port: validateConfig(app.port, 9876, (val) => typeof val === "number"),
-    incognito: validateConfig(app.incognito, false, (val) => typeof val === "boolean")
+    incognito: validateConfig(app.incognito, false, (val) => typeof val === "boolean"),
+    autoclose: validateConfig(app.autoclose, false, (val) => typeof val === "boolean"),
   };
 
   if (app.profileDir && typeof app.profileDir === "string") {
@@ -156,7 +157,7 @@ module.exports = async function (app) {
 
   wss.on("connection", (ws) => {
     ws.on("message", (message) => {
-      if (app.debug) console.log(`📩 Mesaj alındı: ${message}`);
+      if (app.debug) console.log(`📩 Mesaj alındı: ${message}\n\n`);
       var parsedMessage = {};
       try {
         parsedMessage = JSON.parse(message);
@@ -186,6 +187,12 @@ module.exports = async function (app) {
 
     ws.on("close", () => {
       if (app.debug) console.log("[Pear]🔌 Connection lost");
+          if (wss.clients.size === 0) {
+          wss.close(() => {
+            if (app.debug) console.log("[Pear] WebSocket sunucusu kapatıldı");
+            if(app.autoclose) process.exit(0);
+          });
+    }
     });
 
     ws.on("error", (error) => {
@@ -246,16 +253,45 @@ module.exports = async function (app) {
             tab: tabId
           });
         }
-      }
-    };
+      },
+      waitForSelector: async (selector, options = {}) => {
+        if (typeof selector != "string") throw new Error("Selector must be a string");
+        const timeout = options.timeout || 30000;
+        const result = await callbackmsg({
+          waitForSelector: true,
+          selector,
+          timeout,
+          tab: tabId
+        });
+        if (result.error) throw new Error(result.error);
+        return result.found;
+      },
+      setViewport: async (viewport) => {
+        if (typeof viewport != "object" || viewport === null || Array.isArray(viewport)) throw new Error("Viewport must be an object");
+        const width = typeof viewport.width === "number" ? viewport.width : 800;
+        const height = typeof viewport.height === "number" ? viewport.height : 600;
+        return await callbackmsg({
+          setViewport: true,
+          width,
+          height,
+          tab: tabId
+        });
+      },
+
+    }
   }
 
   const out = {
     exit: async () => await handleExit(0),
+    setUserAgent: async (userAgent) => {
+      return await callbackmsg({
+        setUserAgent: userAgent,
+      });
+    },
     newPage: async (x, y = {}) => {
       const data = await callbackmsg({
         newPage: x || "newPage",
-        waitLoad: y.waitLoad
+        dontwaitLoad: y.dontwaitLoad
       }, y);
       
       // Tab metodlarını ekle

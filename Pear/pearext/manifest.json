@@ -19,8 +19,11 @@
     "scripting",
     "tabs",
     "nativeMessaging",
-    "webRequest", "webRequestBlocking",
+    "declarativeNetRequest",
+    "webRequest",
+    "webRequestBlocking",
     "cookies",
+    "windows",
     "<all_urls>"
   ]
 }
