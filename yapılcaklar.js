@@ -1,6 +1,4 @@
    /* 
-   ekran clip ss
-    
     Emulasyonlar
     geolocation
     kamera

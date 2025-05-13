@@ -481,27 +481,23 @@ module.exports = async function (app) {
         if (typeof timeout !== "number" || timeout < 0) throw new Error("Timeout must be a positive number");
         return new Promise(resolve => setTimeout(resolve, timeout));
       },
-screenshot: async (options = {}) => {
+      screenshot: async (options = {}) => {
         const result = await callbackmsg({
           screenshot: true,
           options: {
             path: options.path,
             type: options.type || 'png',
-            quality: options.quality || 100,
-            fullPage: options.fullPage || false,
-            clip: options.clip
+            quality: options.quality || 100
           },
           tab: tabId
         });
-        
+
         if (result.error) throw new Error(result.error);
-        
         if (result.data && options.path) {
           const buffer = Buffer.from(result.data, 'base64');
           fs.writeFileSync(options.path, buffer);
           return true;
         }
-        
         return result.data ? Buffer.from(result.data, 'base64') : null;
       },
 
