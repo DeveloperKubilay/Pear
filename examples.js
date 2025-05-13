@@ -18,15 +18,46 @@ async function main() {
     const sonuc = await newtab.evaluate((a, b) => {
         return a + b;
     }, 5, 10);
-
+await tab.click("#clickArea");
     newtab.mouse.wheel({ deltaY: -500 })
     await newtab.waitForSelector("input[name='q']")
 
         await browser.setUserAgent("Sigma browser v1.0");//sayfaya özel değil
     await newtab.setViewport({ width: 900, height: 500 });//tek seferlik
+        await newtab.uploadFile("#fileInput", filePath);
 }
 
 
+
+
+/*
+    await tab.waitForSelector("#dropdown");
+    
+    // Get all options in the select
+    const options = await tab.select.getOptions("#dropdown");
+    console.log("Available options:", options);
+    
+    // Get currently selected option (initially it's the disabled option)
+    const initialSelection = await tab.select.getSelected("#dropdown");
+    console.log("Initially selected:", initialSelection);
+    
+    // Select option by value
+    await tab.select.selectByValue("#dropdown", "option2");
+    console.log("Selected Option 2 by value");
+    
+    // Select option by text
+    await tab.select.selectByText("#dropdown", "Option 3");
+    console.log("Selected Option 3 by text");
+    
+    // Select option by index (0-based, so 4 would be the 5th option)
+    await tab.select.selectByIndex("#dropdown", 1);
+    console.log("Selected Option 4 by index");
+    
+    // Verify final selection
+    const finalSelection = await tab.select.getSelected("#dropdown");
+    console.log("Final selection:", finalSelection);
+
+*/
 
 
 /*

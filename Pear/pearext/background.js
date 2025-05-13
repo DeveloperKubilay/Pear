@@ -7,8 +7,8 @@ chrome.runtime.onInstalled.addListener(async () => {
 
   var useragent = "";
   chrome.webRequest.onBeforeSendHeaders.addListener(
-  function (details) {
-      if(!useragent) return;
+    function (details) {
+      if (!useragent) return;
       const headers = details.requestHeaders;
 
       for (let i = 0; i < headers.length; i++) {
@@ -22,7 +22,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     { urls: ["<all_urls>"] },
     ["blocking", "requestHeaders"]
   );
-  
+
   // WebSocket üzerinden mesaj göndermeyi kolaylaştıran yardımcı fonksiyon
   function sendSocketMessage(message) {
     if (socket && socket.readyState === WebSocket.OPEN) {
@@ -42,13 +42,13 @@ chrome.runtime.onInstalled.addListener(async () => {
         sendSocketMessage({ session: event.session, cookies });
       });
     },
-    
+
     getallcookie: (event) => {
       chrome.cookies.getAll({}, (cookies) => {
         sendSocketMessage({ session: event.session, cookies });
       });
     },
-    
+
     setcookies: (event) => {
       event.setcookies.forEach(cookie => {
         chrome.cookies.set(cookie, (result) => {
@@ -66,11 +66,11 @@ chrome.runtime.onInstalled.addListener(async () => {
         tabs.forEach(tab => chrome.tabs.remove(tab.id));
       });
     },
-    
+
     closetab: (event) => {
       chrome.tabs.remove(event.closetab);
     },
-    
+
     newPage: (event) => {
       chrome.tabs.create({
         url: event.newPage,
@@ -83,7 +83,45 @@ chrome.runtime.onInstalled.addListener(async () => {
         }
       });
     },
-    
+    uploadFile: (event) => {
+      const { tab, selector, fileData } = event;
+
+      chrome.tabs.executeScript(tab, {
+        code: `
+          (async function() {
+            try {
+              const input = document.querySelector("${selector.replace(/"/g, '\\"')}");
+              if (!input || input.tagName.toLowerCase() !== 'input' || input.type.toLowerCase() !== 'file') {
+                return { error: "Element is not a file input" };
+              }
+              const files = ${JSON.stringify(fileData)}.map(file => {
+                const binaryString = atob(file.content);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                  bytes[i] = binaryString.charCodeAt(i);
+                }
+                return new File([bytes], file.name, { type: file.type });
+              });
+              
+              const dataTransfer = new DataTransfer();
+              files.forEach(file => dataTransfer.items.add(file));
+              input.files = dataTransfer.files;
+              const event = new Event('change', { bubbles: true });
+              input.dispatchEvent(event);
+              
+              return { 
+                success: true, 
+                fileNames: files.map(f => f.name) 
+              };
+            } catch (e) {  return { error: e.message }; } })()
+        `
+      }, (result) => {
+        sendSocketMessage({
+          session: event.session,
+          result: result && result[0]
+        });
+      });
+    },
     evaluate: (event) => {
       try {
         let argsAsString = JSON.stringify(event.args || []);
@@ -92,16 +130,16 @@ chrome.runtime.onInstalled.addListener(async () => {
         chrome.tabs.executeScript(event.tab, {
           code: executableCode
         }, (result) => {
-          sendSocketMessage({ 
-            session: event.session, 
-            result: result && result[0] 
+          sendSocketMessage({
+            session: event.session,
+            result: result && result[0]
           });
         });
       } catch (e) {
         sendSocketMessage({ session: event.session, error: e.message });
       }
     },
-    
+
     mouse: (event) => {
       if (event.wheel) {
         chrome.tabs.executeScript(event.tab, {
@@ -113,21 +151,21 @@ chrome.runtime.onInstalled.addListener(async () => {
     },
 
     setViewport: (event) => {
-        const { tab, width, height } = event;
-        chrome.tabs.get(tab, (tabInfo) => {
-          if (chrome.runtime.lastError) {
-            sendSocketMessage({ 
-              session: event.session, 
-              error: chrome.runtime.lastError.message 
-            });
-            return;
-          }
-          chrome.windows.update(tabInfo.windowId, {
-            width: parseInt(width) + 16,
-            height: parseInt(height) + 88 
-          }, () => {
-            chrome.tabs.executeScript(tab, {
-              code: `
+      const { tab, width, height } = event;
+      chrome.tabs.get(tab, (tabInfo) => {
+        if (chrome.runtime.lastError) {
+          sendSocketMessage({
+            session: event.session,
+            error: chrome.runtime.lastError.message
+          });
+          return;
+        }
+        chrome.windows.update(tabInfo.windowId, {
+          width: parseInt(width) + 16,
+          height: parseInt(height) + 88
+        }, () => {
+          chrome.tabs.executeScript(tab, {
+            code: `
                 document.documentElement.style.width = '${parseInt(width)}px';
                 document.documentElement.style.height = '${parseInt(height)}px';
                 document.body.style.width = '${parseInt(width)}px';
@@ -141,47 +179,261 @@ chrome.runtime.onInstalled.addListener(async () => {
                 }
                 viewport.content = 'width=${parseInt(width)}, height=${parseInt(height)}';
               `
-            }, (result) => {
-              sendSocketMessage({ 
-                session: event.session
-              });
+          }, (result) => {
+            sendSocketMessage({
+              session: event.session
             });
           });
         });
-    },    
-    
+      });
+    },
+
     waitForSelector: (event) => {
       const { tab, selector, timeout = event.timeout ?? 30000 } = event;
       const startTime = Date.now();
-      
+
       const checkElement = () => {
         chrome.tabs.executeScript(tab, {
           code: `!!document.querySelector("${selector.replace(/"/g, '\\"')}")`
         }, (result) => {
           if (chrome.runtime.lastError) return;
-          
+
           if (result && result[0] === true) {
-            sendSocketMessage({ 
-              session: event.session, 
-              found: true 
+            sendSocketMessage({
+              session: event.session,
+              found: true
             });
             return;
           }
-          
+
           if (Date.now() - startTime > timeout) {
-            sendSocketMessage({ 
-              session: event.session, 
-              error: `Timeout: Element "${selector}" not found within ${timeout}ms` 
+            sendSocketMessage({
+              session: event.session,
+              error: `Timeout: Element "${selector}" not found within ${timeout}ms`
             });
             return;
           }
-          
+
           setTimeout(checkElement, 100);
         });
       };
-      
+
       checkElement();
-    }
+    },
+    getPageSource: (event) => {
+      chrome.tabs.executeScript(event.tab, {
+        code: 'document.documentElement.outerHTML'
+      }, (result) => {
+        sendSocketMessage({
+          session: event.session,
+          source: result && result[0]
+        });
+      });
+    },
+    select: (event) => {
+      const { tab, selector, action, value, text, index } = event;
+
+      let code = '';
+
+      switch (action) {
+        case 'selectByValue':
+          code = `
+          (function() {
+            try {
+              const selectElement = document.querySelector("${selector.replace(/"/g, '\\"')}");
+              if (!selectElement || selectElement.tagName.toLowerCase() !== 'select') {
+                return { error: "Element is not a select element" };
+              }
+              
+              selectElement.value = "${value.replace(/"/g, '\\"')}";
+              const event = new Event('change', { bubbles: true });
+              selectElement.dispatchEvent(event);
+              
+              return { 
+                success: true, 
+                selected: selectElement.value,
+                text: selectElement.options[selectElement.selectedIndex]?.text 
+              };
+            } catch (e) {
+              return { error: e.message };
+            }
+          })()
+        `;
+          break;
+
+        case 'selectByText':
+          code = `
+          (function() {
+            try {
+              const selectElement = document.querySelector("${selector.replace(/"/g, '\\"')}");
+              if (!selectElement || selectElement.tagName.toLowerCase() !== 'select') {
+                return { error: "Element is not a select element" };
+              }
+              
+              for (let i = 0; i < selectElement.options.length; i++) {
+                if (selectElement.options[i].text === "${text.replace(/"/g, '\\"')}") {
+                  selectElement.selectedIndex = i;
+                  const event = new Event('change', { bubbles: true });
+                  selectElement.dispatchEvent(event);
+                  return { 
+                    success: true, 
+                    selected: selectElement.value,
+                    text: selectElement.options[i].text 
+                  };
+                }
+              }
+              
+              return { error: \`Option with text "${text.replace(/"/g, '\\"')}" not found\` };
+            } catch (e) {
+              return { error: e.message };
+            }
+          })()
+        `;
+          break;
+
+        case 'selectByIndex':
+          code = `
+          (function() {
+            try {
+              const selectElement = document.querySelector("${selector.replace(/"/g, '\\"')}");
+              if (!selectElement || selectElement.tagName.toLowerCase() !== 'select') {
+                return { error: "Element is not a select element" };
+              }
+              
+              if (${index} < 0 || ${index} >= selectElement.options.length) {
+                return { error: \`Index out of range (0-\${selectElement.options.length-1})\` };
+              }
+              
+              selectElement.selectedIndex = ${index};
+              const event = new Event('change', { bubbles: true });
+              selectElement.dispatchEvent(event);
+              
+              return { 
+                success: true, 
+                selected: selectElement.value,
+                text: selectElement.options[${index}].text 
+              };
+            } catch (e) {
+              return { error: e.message };
+            }
+          })()
+        `;
+          break;
+
+        case 'getOptions':
+          code = `
+          (function() {
+            try {
+              const selectElement = document.querySelector("${selector.replace(/"/g, '\\"')}");
+              if (!selectElement || selectElement.tagName.toLowerCase() !== 'select') {
+                return { error: "Element is not a select element" };
+              }
+              
+              const options = [];
+              for (let i = 0; i < selectElement.options.length; i++) {
+                options.push({
+                  index: i,
+                  value: selectElement.options[i].value,
+                  text: selectElement.options[i].text,
+                  selected: selectElement.options[i].selected
+                });
+              }
+              
+              return { options };
+            } catch (e) {
+              return { error: e.message };
+            }
+          })()
+        `;
+          break;
+
+        case 'getSelected':
+          code = `
+          (function() {
+            try {
+              const selectElement = document.querySelector("${selector.replace(/"/g, '\\"')}");
+              if (!selectElement || selectElement.tagName.toLowerCase() !== 'select') {
+                return { error: "Element is not a select element" };
+              }
+              
+              if (selectElement.selectedIndex === -1) {
+                return { selected: null };
+              }
+              
+              return {
+                selected: {
+                  index: selectElement.selectedIndex,
+                  value: selectElement.value,
+                  text: selectElement.options[selectElement.selectedIndex].text
+                }
+              };
+            } catch (e) {
+              return { error: e.message };
+            }
+          })()
+        `;
+          break;
+      }
+
+      if (!code) return;
+
+      chrome.tabs.executeScript(tab, { code }, (result) => {
+        if (chrome.runtime.lastError) {
+          sendSocketMessage({
+            session: event.session,
+            error: chrome.runtime.lastError.message
+          });
+          return;
+        }
+
+        sendSocketMessage({
+          session: event.session,
+          result: result && result[0]
+        });
+      });
+    },
+     click: (event) => {
+      const { tab, selector, button = 0 } = event;
+      
+      chrome.tabs.executeScript(tab, {
+        code: `
+          (function() {
+            try {
+              const element = document.querySelector("${selector.replace(/"/g, '\\"')}");
+              if (!element) return { error: "Element not found" };
+              
+              const rect = element.getBoundingClientRect();
+              const x = rect.left + rect.width / 2;
+              const y = rect.top + rect.height / 2;
+              
+              element.focus();
+              const mouseEvent = new MouseEvent(${button} === 2 ? 'contextmenu' : 
+                                               (${button} === 0 ? 'click' : 'auxclick'), {
+                bubbles: true,
+                cancelable: true,
+                view: window,
+                button: ${button},
+                buttons: 1 << ${button},
+                clientX: x,
+                clientY: y
+              });
+              
+              const result = element.dispatchEvent(mouseEvent);
+              return { success: result };
+            } catch (e) {
+              return { error: e.message };
+            }
+          })()
+        `
+      }, (result) => {
+        sendSocketMessage({
+          session: event.session,
+          result: result && result[0]
+        });
+      });
+    },
+
+
   };
 
 
@@ -203,10 +455,10 @@ chrome.runtime.onInstalled.addListener(async () => {
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        const commandType = Object.keys(data).find(key => 
+        const commandType = Object.keys(data).find(key =>
           key !== 'session' && key !== 'args' && commandHandlers[key]
         );
-        
+
         if (commandType && commandHandlers[commandType]) {
           commandHandlers[commandType](data);
         }

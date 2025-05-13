@@ -67,17 +67,17 @@ module.exports = async function (app) {
   function loadAndUpdateSettings() {
     const settingsPath = path.join(extensionDir, "settings.json");
     let settings = {};
-    
+
     try {
       settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
     } catch {
       settings = {};
     }
-    
+
     settings.port = app.port;
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
   }
-  
+
   loadAndUpdateSettings();
 
   const chromeFlags = [
@@ -146,7 +146,7 @@ module.exports = async function (app) {
   if (app.server) {
     wss = new WebSocket.Server({ server: app.server });
     if (app.debug) console.log(`[Pear] WebSocket server integrated with HTTP server`);
-    } else {
+  } else {
     wss = new WebSocket.Server({ port: app.port });
     if (app.debug) console.log(`[Pear] WebSocket server started on port ${app.port}`);
   }
@@ -195,12 +195,12 @@ module.exports = async function (app) {
 
     ws.on("close", () => {
       if (app.debug) console.log("[Pear]🔌 Connection lost");
-          if (wss.clients.size === 0) {
-          wss.close(() => {
-            if (app.debug) console.log("[Pear] WebSocket server has been closed");
-            if(app.autoclose) process.exit(0);
-          });
-    }
+      if (wss.clients.size === 0) {
+        wss.close(() => {
+          if (app.debug) console.log("[Pear] WebSocket server has been closed");
+          if (app.autoclose) process.exit(0);
+        });
+      }
     });
 
     ws.on("error", (error) => {
@@ -285,7 +285,141 @@ module.exports = async function (app) {
           tab: tabId
         });
       },
+      uploadFile: async (selector, filePaths) => {
+        if (typeof selector !== "string") throw new Error("Selector must be a string");
+        if (typeof filePaths === "string") filePaths = [filePaths];
+        if (!Array.isArray(filePaths)) throw new Error("File paths must be a string or an array of strings");
 
+        const fileData = filePaths.map(filePath => {
+          const fileName = path.basename(filePath);
+          const fileContent = fs.readFileSync(filePath, { encoding: 'base64' });
+          const ext = path.extname(filePath).toLowerCase();
+
+          const mimeTypes = {
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif',
+            '.pdf': 'application/pdf',
+            '.txt': 'text/plain',
+            '.csv': 'text/csv',
+            '.doc': 'application/msword',
+            '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            '.xls': 'application/vnd.ms-excel',
+            '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+          };
+          const fileType = mimeTypes[ext] || 'application/octet-stream';
+
+          return {
+            name: fileName,
+            content: fileContent,
+            type: fileType
+          };
+        });
+
+        const result = await callbackmsg({
+          uploadFile: true,
+          selector,
+          fileData,
+          tab: tabId
+        });
+
+        if (result.error) throw new Error(result.error);
+        return result.result;
+      },
+      select: {
+        selectByValue: async (selector, value) => {
+          if (typeof selector !== "string") throw new Error("Selector must be a string");
+          if (typeof value !== "string") throw new Error("Value must be a string");
+
+          const result = await callbackmsg({
+            select: true,
+            action: 'selectByValue',
+            selector,
+            value,
+            tab: tabId
+          });
+
+          if (result.error) throw new Error(result.error);
+          return result.result;
+        },
+        selectByText: async (selector, text) => {
+          if (typeof selector !== "string") throw new Error("Selector must be a string");
+          if (typeof text !== "string") throw new Error("Text must be a string");
+
+          const result = await callbackmsg({
+            select: true,
+            action: 'selectByText',
+            selector,
+            text,
+            tab: tabId
+          });
+
+          if (result.error) throw new Error(result.error);
+          return result.result;
+        },
+        selectByIndex: async (selector, index) => {
+          if (typeof selector !== "string") throw new Error("Selector must be a string");
+          if (typeof index !== "number") throw new Error("Index must be a number");
+
+          const result = await callbackmsg({
+            select: true,
+            action: 'selectByIndex',
+            selector,
+            index,
+            tab: tabId
+          });
+
+          if (result.error) throw new Error(result.error);
+          return result.result;
+        },
+        getOptions: async (selector) => {
+          if (typeof selector !== "string") throw new Error("Selector must be a string");
+
+          const result = await callbackmsg({
+            select: true,
+            action: 'getOptions',
+            selector,
+            tab: tabId
+          });
+
+          if (result.error) throw new Error(result.error);
+          return result.result.options;
+        },
+        getSelected: async (selector) => {
+          if (typeof selector !== "string") throw new Error("Selector must be a string");
+
+          const result = await callbackmsg({
+            select: true,
+            action: 'getSelected',
+            selector,
+            tab: tabId
+          });
+
+          if (result.error) throw new Error(result.error);
+          return result.result.selected;
+        }
+      },
+      getPageSource: async () => {
+        const result = await callbackmsg({
+          getPageSource: true,
+          tab: tabId
+        });
+        if (result.error) throw new Error(result.error);
+        return result.source;
+      },
+      click: async (selector, options = {}) => {
+        if (typeof selector !== "string") throw new Error("Selector must be a string");
+        const button = options.button || 0; // 0=left, 2=right, 1=middle, 3=back, 4=forward
+        const result = await callbackmsg({
+          click: true,
+          selector,
+          button,
+          tab: tabId
+        });
+        if (result.error) throw new Error(result.error);
+        return result.result;
+      },
     }
   }
 
@@ -301,7 +435,7 @@ module.exports = async function (app) {
         newPage: x || "newPage",
         dontwaitLoad: y.dontwaitLoad
       }, y);
-      
+
       // Tab metodlarını ekle
       Object.assign(data.tab, createTabMethods(data.tab.id));
       return data.tab;
@@ -310,7 +444,7 @@ module.exports = async function (app) {
       if (typeof x != "number") throw new Error("Tab ID must be a number");
       return await callbackmsg({ closetab: x });
     },
-      getCookies: async (domain) => {
+    getCookies: async (domain) => {
       if (typeof domain !== "string") throw new Error("Domain must be a string");
       const response = await callbackmsg({ getcookie: domain });
       return response.cookies;

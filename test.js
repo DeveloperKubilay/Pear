@@ -3,11 +3,11 @@ const PearBrowser = require("./Pear")
 async function main() {
     const browser = await PearBrowser({
         profileDir: "./profile",
-        debug: true,
+        debug: false,
         autoclose: false,
     });
 
-    const newtab = await browser.newPage("https://www.whatismybrowser.com/detect/what-is-my-user-agent/");
+    const tab = await browser.newPage("file:///C:/Users/kubil/Desktop/Pear/test.html");
 
 }
 
