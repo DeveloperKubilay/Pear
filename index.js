@@ -8,7 +8,7 @@ async function main() {
 
     const newtab = await browser.newPage("https://www.google.com/search?q=oe", { waitLoad: true });
 
-    await newtab.mouse.wheel({deltaY: 100})
+    await newtab.mouse.wheel({deltaY: 500})
 
     /*
     // Page evaluate kullanımı

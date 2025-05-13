@@ -10,6 +10,8 @@
     }).then((value) => {
         console.log("Input value:", value)
     })    
+
+    chrome kapandığında node kapansın
     
     useragent sonradan değiştirme
     sekmeye özel çözünülürlük

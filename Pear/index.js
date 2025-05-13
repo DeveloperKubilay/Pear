@@ -239,6 +239,8 @@ module.exports = async function (app) {
           if (typeof x != "object" || x === null || Array.isArray(x)) x = {};
           if (typeof x.deltaX != "number") x.deltaX = 0;
           if (typeof x.deltaY != "number") x.deltaY = 0;
+          if(typeof x.x === "number") x.deltaX = x.x;
+          if(typeof x.y === "number") x.deltaY = x.y;
           return await callbackmsg({
             mouse: true,
             wheel: true,
