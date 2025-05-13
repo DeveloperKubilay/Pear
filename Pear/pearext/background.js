@@ -392,9 +392,9 @@ chrome.runtime.onInstalled.addListener(async () => {
         });
       });
     },
-     click: (event) => {
+    click: (event) => {
       const { tab, selector, button = 0 } = event;
-      
+
       chrome.tabs.executeScript(tab, {
         code: `
           (function() {
@@ -432,6 +432,159 @@ chrome.runtime.onInstalled.addListener(async () => {
         });
       });
     },
+dragAndDrop: (event) => {
+  const { tab, sourceSelector, targetSelector, fileName, fileContent, fileType } = event;
+  const isFileDrop = fileName && fileContent && fileType;
+  
+  let code;
+  
+  if (isFileDrop) {
+    code = `
+      (function() {
+        try {
+          const target = document.querySelector("${targetSelector.replace(/"/g, '\\"')}");
+          if (!target) return { error: "Target element not found" };
+          
+          const targetRect = target.getBoundingClientRect();
+          
+          // Create the events
+          const dragEnterEvent = new DragEvent('dragenter', {
+            bubbles: true,
+            cancelable: true,
+            clientX: targetRect.left + targetRect.width / 2,
+            clientY: targetRect.top + targetRect.height / 2
+          });
+          
+          const dragOverEvent = new DragEvent('dragover', {
+            bubbles: true,
+            cancelable: true,
+            clientX: targetRect.left + targetRect.width / 2,
+            clientY: targetRect.top + targetRect.height / 2
+          });
+          
+          const dropEvent = new DragEvent('drop', {
+            bubbles: true,
+            cancelable: true,
+            clientX: targetRect.left + targetRect.width / 2,
+            clientY: targetRect.top + targetRect.height / 2
+          });
+          
+          // Create file from base64
+          const binaryString = atob("${fileContent}");
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          const file = new File([bytes], "${fileName}", { type: "${fileType}" });
+          
+          // Create and configure DataTransfer
+          const dt = new DataTransfer();
+          dt.items.add(file);
+          
+          Object.defineProperty(dragEnterEvent, 'dataTransfer', { value: dt });
+          Object.defineProperty(dragOverEvent, 'dataTransfer', { value: dt });
+          Object.defineProperty(dropEvent, 'dataTransfer', { value: dt });
+          
+          // Dispatch events
+          target.dispatchEvent(dragEnterEvent);
+          target.dispatchEvent(dragOverEvent);
+          dragOverEvent.preventDefault();
+          target.dispatchEvent(dropEvent);
+          
+          return { success: true };
+        } catch (e) {
+          return { error: e.message };
+        }
+      })()
+    `;
+  } else {
+    // Element drag operation
+    code = `
+      (function() {
+        try {
+          const source = document.querySelector("${sourceSelector.replace(/"/g, '\\"')}");
+          const target = document.querySelector("${targetSelector.replace(/"/g, '\\"')}");
+          
+          if (!source) return { error: "Source element not found" };
+          if (!target) return { error: "Target element not found" };
+          
+          const sourceRect = source.getBoundingClientRect();
+          const targetRect = target.getBoundingClientRect();
+          
+          const dragStartEvent = new MouseEvent('dragstart', {
+            bubbles: true,
+            cancelable: true,
+            clientX: sourceRect.left + sourceRect.width / 2,
+            clientY: sourceRect.top + sourceRect.height / 2
+          });
+          
+          const dragEnterEvent = new MouseEvent('dragenter', {
+            bubbles: true,
+            cancelable: true,
+            clientX: targetRect.left + targetRect.width / 2,
+            clientY: targetRect.top + targetRect.height / 2
+          });
+          
+          const dragOverEvent = new MouseEvent('dragover', {
+            bubbles: true,
+            cancelable: true,
+            clientX: targetRect.left + targetRect.width / 2,
+            clientY: targetRect.top + targetRect.height / 2
+          });
+          
+          const dropEvent = new MouseEvent('drop', {
+            bubbles: true,
+            cancelable: true,
+            clientX: targetRect.left + targetRect.width / 2,
+            clientY: targetRect.top + targetRect.height / 2
+          });
+          
+          const dragEndEvent = new MouseEvent('dragend', {
+            bubbles: true,
+            cancelable: true,
+            clientX: targetRect.left + targetRect.width / 2,
+            clientY: targetRect.top + targetRect.height / 2
+          });
+          
+          let dt = new DataTransfer();
+          Object.defineProperty(dragStartEvent, 'dataTransfer', {
+            value: dt
+          });
+          Object.defineProperty(dragEnterEvent, 'dataTransfer', {
+            value: dt
+          });
+          Object.defineProperty(dragOverEvent, 'dataTransfer', {
+            value: dt
+          });
+          Object.defineProperty(dropEvent, 'dataTransfer', {
+            value: dt
+          });
+          Object.defineProperty(dragEndEvent, 'dataTransfer', {
+            value: dt
+          });
+          
+          source.dispatchEvent(dragStartEvent);
+          target.dispatchEvent(dragEnterEvent);
+          target.dispatchEvent(dragOverEvent);
+          dragOverEvent.preventDefault();
+          target.dispatchEvent(dropEvent);
+          source.dispatchEvent(dragEndEvent);
+          
+          return { success: true };
+        } catch (e) {
+          return { error: e.message };
+        }
+      })()
+    `;
+  }
+
+  chrome.tabs.executeScript(tab, { code }, (result) => {
+    sendSocketMessage({
+      session: event.session,
+      result: result && result[0]
+    });
+  });
+},
 
 
   };

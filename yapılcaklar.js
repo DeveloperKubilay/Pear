@@ -1,11 +1,9 @@
    /* 
-    objeye drag and drop yapma
-    await newtab.screenshot({path: "screenshot.png"})
-    proxy
+    await newtab.screenshot({path: "screenshot.png"}) ve pdf oluşturma
+
     tarayıcı alert verirse yönlendirme okey deme
     tarayıcı birşey derse yönlendirme kabul etme veya iptal etme (true/false)
-    pdf oluşturma
-    await newtab.waitForTimeout(5000),
+    await newtab.waitForTimeout(5000)
 
     Emulasyonlar
     geolocation

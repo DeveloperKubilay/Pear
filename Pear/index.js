@@ -37,6 +37,7 @@ module.exports = async function (app) {
     incognito: validateConfig(app.incognito, false, (val) => typeof val === "boolean"),
     autoclose: validateConfig(app.autoclose, false, (val) => typeof val === "boolean"),
     server: validateConfig(app.server, null, (val) => val !== undefined),
+    proxy: validateConfig(app.proxy, "", (val) => typeof val === "string"),
   };
 
   if (app.profileDir && typeof app.profileDir === "string") {
@@ -63,7 +64,7 @@ module.exports = async function (app) {
     return;
   }
 
-  // Ayarları yükleme ve güncelleme
+  // update settings.json with the current port
   function loadAndUpdateSettings() {
     const settingsPath = path.join(extensionDir, "settings.json");
     let settings = {};
@@ -101,6 +102,10 @@ module.exports = async function (app) {
 
   if (app.incognito)
     chromeFlags.push(`--incognito`);
+
+  if (app.proxy) 
+    chromeFlags.push(`--proxy-server=${app.proxy}`);
+  
 
   chromeFlags.push(...app.args);
 
@@ -420,6 +425,50 @@ module.exports = async function (app) {
         if (result.error) throw new Error(result.error);
         return result.result;
       },
+      dragAndDrop: async (sourceSelector, targetSelector) => {
+        if (typeof sourceSelector !== "string" || typeof targetSelector !== "string")
+          throw new Error("Source and target selectors must be strings");
+
+        const result = await callbackmsg({
+          dragAndDrop: true,
+          sourceSelector,
+          targetSelector,
+          tab: tabId
+        });
+
+        if (result.error) throw new Error(result.error);
+        return result.success;
+      },
+
+      dragAndDropFile: async (filePath, targetSelector) => {
+        if (typeof filePath !== "string" || typeof targetSelector !== "string")
+          throw new Error("File path and target selector must be strings");
+
+        const fileName = path.basename(filePath);
+        const fileContent = fs.readFileSync(filePath, { encoding: 'base64' });
+        const ext = path.extname(filePath).toLowerCase();
+
+        const mimeTypes = {
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.png': 'image/png',
+          '.gif': 'image/gif',
+          '.pdf': 'application/pdf',
+        };
+        const fileType = mimeTypes[ext] || 'application/octet-stream';
+
+        const result = await callbackmsg({
+          dragAndDrop: true,  
+          fileName,
+          fileContent,
+          fileType,
+          targetSelector,
+          tab: tabId
+        });
+
+        if (result.error) throw new Error(result.error);
+        return result.success;
+      },
     }
   }
 
@@ -436,7 +485,6 @@ module.exports = async function (app) {
         dontwaitLoad: y.dontwaitLoad
       }, y);
 
-      // Tab metodlarını ekle
       Object.assign(data.tab, createTabMethods(data.tab.id));
       return data.tab;
     },
