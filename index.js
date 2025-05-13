@@ -1,5 +1,9 @@
 const PearBrowser = require("./Pear")
 
+const express = require("express");
+const app = express();
+app.listen(3000)
+
 async function main() {
     const browser = await PearBrowser({
         profileDir: "./profile",

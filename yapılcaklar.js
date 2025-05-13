@@ -1,6 +1,4 @@
    /* 
-    port yerine uzaktan kontrol
-    direk ws express'e bağlanabilsin
     cookies
     dosya seçme
     await newtab.screenshot({path: "screenshot.png"})

@@ -36,6 +36,7 @@ module.exports = async function (app) {
     port: validateConfig(app.port, 9876, (val) => typeof val === "number"),
     incognito: validateConfig(app.incognito, false, (val) => typeof val === "boolean"),
     autoclose: validateConfig(app.autoclose, false, (val) => typeof val === "boolean"),
+    server: validateConfig(app.server, null, (val) => val !== undefined),
   };
 
   if (app.profileDir && typeof app.profileDir === "string") {
@@ -141,7 +142,14 @@ module.exports = async function (app) {
     await handleExit(1);
   });
 
-  const wss = new WebSocket.Server({ port: app.port });
+  let wss;
+  if (app.server) {
+    wss = new WebSocket.Server({ server: app.server });
+    if (app.debug) console.log(`[Pear] WebSocket server integrated with HTTP server`);
+    } else {
+    wss = new WebSocket.Server({ port: app.port });
+    if (app.debug) console.log(`[Pear] WebSocket server started on port ${app.port}`);
+  }
   var browserStarted = false;
 
   let browserReadyResolve = null;
@@ -157,7 +165,7 @@ module.exports = async function (app) {
 
   wss.on("connection", (ws) => {
     ws.on("message", (message) => {
-      if (app.debug) console.log(`📩 Mesaj alındı: ${message}\n\n`);
+      if (app.debug) console.log(`📩 I got a msg: ${message}\n\n`);
       var parsedMessage = {};
       try {
         parsedMessage = JSON.parse(message);
@@ -189,7 +197,7 @@ module.exports = async function (app) {
       if (app.debug) console.log("[Pear]🔌 Connection lost");
           if (wss.clients.size === 0) {
           wss.close(() => {
-            if (app.debug) console.log("[Pear] WebSocket sunucusu kapatıldı");
+            if (app.debug) console.log("[Pear] WebSocket server has been closed");
             if(app.autoclose) process.exit(0);
           });
     }
