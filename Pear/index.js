@@ -5,36 +5,41 @@ const WebSocket = require("ws");
 const EventEmitter = require('events');
 
 module.exports = async function (app) {
+  // Parametre doğrulama yardımcı fonksiyonu
+  function validateConfig(config, defaultValue, validator = () => true) {
+    return validator(config) ? config : defaultValue;
+  }
+
   if (typeof app !== "object" || app === null || Array.isArray(app)) app = {};
 
   app = {
-    browserPath:
-      typeof app.browserPath == "string"
-        ? app.browserPath
-        : process.platform === "win32"
-          ? "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
-          : process.platform === "darwin"
-            ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-            : "/usr/bin/google-chrome",
+    browserPath: validateConfig(
+      app.browserPath,
+      process.platform === "win32"
+        ? "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+        : process.platform === "darwin"
+          ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+          : "/usr/bin/google-chrome",
+      (val) => typeof val === "string"
+    ),
 
-    profileDir:
-      typeof app.profileDir == "string"
-        ? path.join(process.cwd(), app.profileDir)
-        : path.join(__dirname, "../profile"),
+    profileDir: validateConfig(
+      app.profileDir,
+      path.join(__dirname, "../profile"),
+      (val) => typeof val === "string"
+    ),
 
-    args:
-      typeof app.args == "object" && Array.isArray(app.args) ? app.args : [],
-
-    debug: typeof app.debug == "boolean" ? app.debug : false,
-
-    useragent: typeof app.useragent == "string" ? app.useragent : "",
-
-    viewport: typeof app.viewport == "object" ? app.viewport : {},
-
-    port: typeof app.port == "number" ? app.port : 9876,
-
-    incognito: typeof app.incognito == "boolean" ? app.incognito : false
+    args: validateConfig(app.args, [], (val) => Array.isArray(val)),
+    debug: validateConfig(app.debug, false, (val) => typeof val === "boolean"),
+    useragent: validateConfig(app.useragent, "", (val) => typeof val === "string"),
+    viewport: validateConfig(app.viewport, {}, (val) => typeof val === "object"),
+    port: validateConfig(app.port, 9876, (val) => typeof val === "number"),
+    incognito: validateConfig(app.incognito, false, (val) => typeof val === "boolean")
   };
+
+  if (app.profileDir && typeof app.profileDir === "string") {
+    app.profileDir = path.join(process.cwd(), app.profileDir);
+  }
 
   const extensionDir = path.join(__dirname, "pearext");
 
@@ -56,29 +61,34 @@ module.exports = async function (app) {
     return;
   }
 
-  var settingsExtConfig = fs.readFileSync(
-    path.join(extensionDir, "settings.json"),
-    "utf8"
-  );
-  try { settingsExtConfig = JSON.parse(settingsExtConfig); } catch { settingsExtConfig = {} }
-  settingsExtConfig.port = app.port;
-  fs.writeFileSync(
-    path.join(extensionDir, "settings.json"),
-    JSON.stringify(settingsExtConfig, null, 2)
-  );
+  // Ayarları yükleme ve güncelleme
+  function loadAndUpdateSettings() {
+    const settingsPath = path.join(extensionDir, "settings.json");
+    let settings = {};
+    
+    try {
+      settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+    } catch {
+      settings = {};
+    }
+    
+    settings.port = app.port;
+    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+  }
+  
+  loadAndUpdateSettings();
 
   const chromeFlags = [
     `--user-data-dir="${app.profileDir}"`,
-    `--load-extension="${extensionDir}"`, // Uzantıyı yükle
-    "--no-first-run", // İlk çalıştırma karşılama ekranını atla
-    "--no-default-browser-check", // Varsayılan tarayıcı kontrolünü atla
-    "--disable-translate", // Çeviri önerisini kapat
-    "--disable-infobars", // Bilgi çubuklarını kapat
-    "--disable-notifications", // Bildirimleri devre dışı bırak
-    "--disable-popup-blocking", // Pop-up engelleyiciyi devre dışı bırak
-    "--start-maximized", // Tam ekran başlat
-    "--enable-features=ExtensionsManifestV2", // Force enable Manifest V2 support
-
+    `--load-extension="${extensionDir}"`,
+    "--no-first-run",
+    "--no-default-browser-check",
+    "--disable-translate",
+    "--disable-infobars",
+    "--disable-notifications",
+    "--disable-popup-blocking",
+    "--start-maximized",
+    "--enable-features=ExtensionsManifestV2",
   ];
 
   if (app.viewport.width && app.viewport.height)
@@ -92,7 +102,7 @@ module.exports = async function (app) {
 
   chromeFlags.push(...app.args);
 
-
+  // Tarayıcıyı başlat
   exec(`"${app.browserPath}" ${chromeFlags.join(" ")}`, (error, stdout, stderr) => {
     if (error) {
       console.error(`❌ [Pear] failed to launch browser: ${error}`);
@@ -115,21 +125,19 @@ module.exports = async function (app) {
     }
   }
 
+  // Çıkış işlemlerini yönetmek için ortak fonksiyon
+  async function handleExit(exitCode = 0) {
+    await sendmsg({ exit: true });
+    process.exit(exitCode);
+  }
+
+  // Süreç olayları için tek bir yönetim yaklaşımı
   process.on('exit', async () => await sendmsg({ exit: true }));
-
-  process.on('SIGINT', async () => {
-    await sendmsg({ exit: true });
-    process.exit(0);
-  });
-
-  process.on('SIGTERM', async () => {
-    await sendmsg({ exit: true });
-    process.exit(0);
-  });
-
+  process.on('SIGINT', async () => await handleExit(0));
+  process.on('SIGTERM', async () => await handleExit(0));
   process.on('uncaughtException', async (err) => {
-    await sendmsg({ exit: true });
-    process.exit(1);
+    console.error('Uncaught exception:', err);
+    await handleExit(1);
   });
 
   const wss = new WebSocket.Server({ port: app.port });
@@ -147,8 +155,6 @@ module.exports = async function (app) {
   const Events = new EventEmitter();
 
   wss.on("connection", (ws) => {
-    //if(app.debug) console.log("[Pear] ✅ A browser is ws connected");
-
     ws.on("message", (message) => {
       if (app.debug) console.log(`📩 Mesaj alındı: ${message}`);
       var parsedMessage = {};
@@ -187,12 +193,12 @@ module.exports = async function (app) {
     });
   });
 
-
-  const callbackmap = new Map()
+  const callbackmap = new Map();
 
   function randomidgenerator() {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   }
+
   async function callbackmsg(x, y) {
     const session = randomidgenerator();
     x.session = session;
@@ -211,56 +217,58 @@ module.exports = async function (app) {
 
   await browserReadyPromise;
 
-  const out = {
-    exit: async () => {
-      await sendmsg({ exit: true });
-      process.exit(0);
-    },
-    newPage: async (x, y) => {
-      const data = await callbackmsg({
-        newPage: x || "newPage",
-        waitLoad: y.waitLoad
-      }, y || {});
-      data.tab.close = async () => await out.closeTab(data.tab.id);
-      data.tab.exit = data.tab.close;
-      data.tab.evaluate = async (fn, ...args) => {
+  // Tab işlemleri için genişletilebilir yapı oluştur
+  function createTabMethods(tabId) {
+    return {
+      close: async () => await out.closeTab(tabId),
+      exit: async () => await out.closeTab(tabId),
+      evaluate: async (fn, ...args) => {
         if (typeof fn != "function") throw new Error("fn must be a function");
         const result = await callbackmsg({
           evaluate: true,
           code: fn.toString(),
           args: args,
-          tab: data.tab.id
+          tab: tabId
         });
         if (result.error) throw new Error(result.error);
         return result.result;
-      }
-      data.tab.mouse ={
+      },
+      mouse: {
         wheel: async (x) => {
           if (typeof x != "object" || x === null || Array.isArray(x)) x = {};
-          if (typeof x.deltaX != "number") x.deltaX = 0;
-          if (typeof x.deltaY != "number") x.deltaY = 0;
-          if(typeof x.x === "number") x.deltaX = x.x;
-          if(typeof x.y === "number") x.deltaY = x.y;
+          const deltaX = typeof x.deltaX === "number" ? x.deltaX : (typeof x.x === "number" ? x.x : 0);
+          const deltaY = typeof x.deltaY === "number" ? x.deltaY : (typeof x.y === "number" ? x.y : 0);
           return await callbackmsg({
             mouse: true,
             wheel: true,
-            deltaX: x.deltaX,
-            deltaY: x.deltaY,
-            tab: data.tab.id
+            deltaX,
+            deltaY,
+            tab: tabId
           });
         }
       }
+    };
+  }
 
+  const out = {
+    exit: async () => await handleExit(0),
+    newPage: async (x, y = {}) => {
+      const data = await callbackmsg({
+        newPage: x || "newPage",
+        waitLoad: y.waitLoad
+      }, y);
+      
+      // Tab metodlarını ekle
+      Object.assign(data.tab, createTabMethods(data.tab.id));
       return data.tab;
     },
     closeTab: async (x) => {
-      if (typeof x != "number") new Error("Tab ID must be a number")
-      return await callbackmsg({ closetab: x || "newPage" });
+      if (typeof x != "number") throw new Error("Tab ID must be a number");
+      return await callbackmsg({ closetab: x });
     },
     Events: Events
-  }
+  };
   out.close = out.exit;
-
 
   return out;
 };
