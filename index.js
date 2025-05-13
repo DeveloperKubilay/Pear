@@ -6,7 +6,9 @@ async function main() {
         debug: false
     });
 
-    const newtab = await browser.newPage("https://www.google.com", { waitLoad: true });
+    const newtab = await browser.newPage("https://www.google.com/search?q=oe", { waitLoad: true });
+
+    await newtab.mouse.wheel({deltaY: 100})
 
     /*
     // Page evaluate kullanımı

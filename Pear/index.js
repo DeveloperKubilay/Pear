@@ -234,6 +234,20 @@ module.exports = async function (app) {
         if (result.error) throw new Error(result.error);
         return result.result;
       }
+      data.tab.mouse ={
+        wheel: async (x) => {
+          if (typeof x != "object" || x === null || Array.isArray(x)) x = {};
+          if (typeof x.deltaX != "number") x.deltaX = 0;
+          if (typeof x.deltaY != "number") x.deltaY = 0;
+          return await callbackmsg({
+            mouse: true,
+            wheel: true,
+            deltaX: x.deltaX,
+            deltaY: x.deltaY,
+            tab: data.tab.id
+          });
+        }
+      }
 
       return data.tab;
     },
