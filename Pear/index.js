@@ -310,6 +310,20 @@ module.exports = async function (app) {
       if (typeof x != "number") throw new Error("Tab ID must be a number");
       return await callbackmsg({ closetab: x });
     },
+      getCookies: async (domain) => {
+      if (typeof domain !== "string") throw new Error("Domain must be a string");
+      const response = await callbackmsg({ getcookie: domain });
+      return response.cookies;
+    },
+    getAllCookies: async () => {
+      const response = await callbackmsg({ getallcookie: true });
+      return response.cookies;
+    },
+    setCookies: async (cookies) => {
+      if (!Array.isArray(cookies)) throw new Error("Cookies parameter must be an array");
+      const response = await callbackmsg({ setcookies: cookies });
+      return response.cookies;
+    },
     Events: Events
   };
   out.close = out.exit;
