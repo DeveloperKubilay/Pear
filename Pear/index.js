@@ -38,6 +38,8 @@ module.exports = async function (app) {
     autoclose: validateConfig(app.autoclose, false, (val) => typeof val === "boolean"),
     server: validateConfig(app.server, null, (val) => val !== undefined),
     proxy: validateConfig(app.proxy, "", (val) => typeof val === "string"),
+    nosandbox: validateConfig(app.nosandbox, false, (val) => typeof val === "boolean"),
+    muteaudio: validateConfig(app.muteaudio, false, (val) => typeof val === "boolean"),
   };
 
   if (app.profileDir && typeof app.profileDir === "string") {
@@ -103,9 +105,15 @@ module.exports = async function (app) {
   if (app.incognito)
     chromeFlags.push(`--incognito`);
 
-  if (app.proxy) 
+  if (app.nosandbox)
+    chromeFlags.push(`--no-sandbox`);
+
+  if (app.muteaudio)
+    chromeFlags.push(`--mute-audio`);
+
+  if (app.proxy)
     chromeFlags.push(`--proxy-server=${app.proxy}`);
-  
+
 
   chromeFlags.push(...app.args);
 
@@ -166,7 +174,7 @@ module.exports = async function (app) {
     }
   });
 
-  const Events = new EventEmitter();
+  const out = new EventEmitter();
 
   wss.on("connection", (ws) => {
     ws.on("message", (message) => {
@@ -188,7 +196,7 @@ module.exports = async function (app) {
 
       //events
       if (parsedMessage.event == "tabcreated") {
-        Events.emit("tabcreated", parsedMessage.tab);
+        out.emit("tabcreated", parsedMessage.tab);
       }
 
       if (callbackmap.has(parsedMessage.session)) {
@@ -458,7 +466,7 @@ module.exports = async function (app) {
         const fileType = mimeTypes[ext] || 'application/octet-stream';
 
         const result = await callbackmsg({
-          dragAndDrop: true,  
+          dragAndDrop: true,
           fileName,
           fileContent,
           fileType,
@@ -469,10 +477,39 @@ module.exports = async function (app) {
         if (result.error) throw new Error(result.error);
         return result.success;
       },
+      waitForTimeout: async (timeout) => {
+        if (typeof timeout !== "number" || timeout < 0) throw new Error("Timeout must be a positive number");
+        return new Promise(resolve => setTimeout(resolve, timeout));
+      },
+screenshot: async (options = {}) => {
+        const result = await callbackmsg({
+          screenshot: true,
+          options: {
+            path: options.path,
+            type: options.type || 'png',
+            quality: options.quality || 100,
+            fullPage: options.fullPage || false,
+            clip: options.clip
+          },
+          tab: tabId
+        });
+        
+        if (result.error) throw new Error(result.error);
+        
+        if (result.data && options.path) {
+          const buffer = Buffer.from(result.data, 'base64');
+          fs.writeFileSync(options.path, buffer);
+          return true;
+        }
+        
+        return result.data ? Buffer.from(result.data, 'base64') : null;
+      },
+
+
     }
   }
 
-  const out = {
+  Object.assign(out, {
     exit: async () => await handleExit(0),
     setUserAgent: async (userAgent) => {
       return await callbackmsg({
@@ -505,9 +542,8 @@ module.exports = async function (app) {
       if (!Array.isArray(cookies)) throw new Error("Cookies parameter must be an array");
       const response = await callbackmsg({ setcookies: cookies });
       return response.cookies;
-    },
-    Events: Events
-  };
+    }
+  });
   out.close = out.exit;
 
   return out;

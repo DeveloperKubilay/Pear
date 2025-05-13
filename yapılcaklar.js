@@ -1,10 +1,6 @@
    /* 
-    await newtab.screenshot({path: "screenshot.png"}) ve pdf oluşturma
-
-    tarayıcı alert verirse yönlendirme okey deme
-    tarayıcı birşey derse yönlendirme kabul etme veya iptal etme (true/false)
-    await newtab.waitForTimeout(5000)
-
+   ekran clip ss
+    
     Emulasyonlar
     geolocation
     kamera
@@ -26,4 +22,5 @@
     await newtab.keyboard.up("ArrowDown")
 
     nasıl kullanıldığı
+    installer chrome fln
     */

@@ -432,14 +432,14 @@ chrome.runtime.onInstalled.addListener(async () => {
         });
       });
     },
-dragAndDrop: (event) => {
-  const { tab, sourceSelector, targetSelector, fileName, fileContent, fileType } = event;
-  const isFileDrop = fileName && fileContent && fileType;
-  
-  let code;
-  
-  if (isFileDrop) {
-    code = `
+    dragAndDrop: (event) => {
+      const { tab, sourceSelector, targetSelector, fileName, fileContent, fileType } = event;
+      const isFileDrop = fileName && fileContent && fileType;
+
+      let code;
+
+      if (isFileDrop) {
+        code = `
       (function() {
         try {
           const target = document.querySelector("${targetSelector.replace(/"/g, '\\"')}");
@@ -497,9 +497,8 @@ dragAndDrop: (event) => {
         }
       })()
     `;
-  } else {
-    // Element drag operation
-    code = `
+      } else {
+        code = `
       (function() {
         try {
           const source = document.querySelector("${sourceSelector.replace(/"/g, '\\"')}");
@@ -576,15 +575,152 @@ dragAndDrop: (event) => {
         }
       })()
     `;
-  }
+      }
 
-  chrome.tabs.executeScript(tab, { code }, (result) => {
-    sendSocketMessage({
-      session: event.session,
-      result: result && result[0]
+      chrome.tabs.executeScript(tab, { code }, (result) => {
+        sendSocketMessage({
+          session: event.session,
+          result: result && result[0]
+        });
+      });
+    },
+    screenshot: (event) => {
+      const { tab, options } = event;
+      const { fullPage, type, quality, clip } = options || {};
+
+      const captureOptions = { format: type || 'png' };
+      if (quality && (type === 'jpeg' || type === 'webp')) {
+        captureOptions.quality = quality;
+      }
+
+      if (fullPage) {
+        chrome.tabs.executeScript(tab, {
+          code: `
+          (function() {
+            const body = document.body;
+            const html = document.documentElement;
+            
+            const height = Math.max(
+              body.scrollHeight, body.offsetHeight,
+              html.clientHeight, html.scrollHeight, html.offsetHeight
+            );
+            
+            const width = Math.max(
+              body.scrollWidth, body.offsetWidth,
+              html.clientWidth, html.scrollWidth, html.offsetWidth
+            );
+            
+            return { width, height };
+          })()
+        `
+        }, (dimensions) => {
+          if (chrome.runtime.lastError) {
+            sendSocketMessage({
+              session: event.session,
+              error: chrome.runtime.lastError.message
+            });
+            return;
+          }
+          chrome.tabs.executeScript(tab, {
+            code: 'const originalScroll = { x: window.scrollX, y: window.scrollY }; originalScroll;'
+          }, (originalScroll) => {
+            chrome.tabs.captureVisibleTab(null, captureOptions, (dataUrl) => {
+              if (chrome.runtime.lastError) {
+                sendSocketMessage({
+                  session: event.session,
+                  error: chrome.runtime.lastError.message
+                });
+                return;
+              }
+              chrome.tabs.executeScript(tab, {
+                code: `window.scrollTo(${originalScroll[0].x}, ${originalScroll[0].y});`
+              }, () => {
+                const base64Data = dataUrl.replace(/^data:image\/(png|jpeg|webp);base64,/, '');
+                sendSocketMessage({
+                  session: event.session,
+                  data: base64Data
+                });
+              });
+            });
+          });
+        });
+      } else if (clip) {
+    chrome.tabs.captureVisibleTab(null, captureOptions, (dataUrl) => {
+      if (chrome.runtime.lastError) {
+        sendSocketMessage({
+          session: event.session,
+          error: chrome.runtime.lastError.message
+        });
+        return;
+      }
+
+      chrome.tabs.executeScript(tab, {
+        code: `
+        (function() {
+          const img = new Image();
+          img.src = "${dataUrl}";
+          let completed = false;
+          
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = ${clip.width};
+            canvas.height = ${clip.height};
+            
+            ctx.drawImage(
+              img,
+              ${clip.x}, ${clip.y}, ${clip.width}, ${clip.height},
+              0, 0, ${clip.width}, ${clip.height}
+            );
+            
+            completed = true;
+            return canvas.toDataURL('${type || 'image/png'}', ${quality ? quality / 100 : 1});
+          };
+          
+          // Wait a moment for image to load and return result
+          const startTime = Date.now();
+          while (!completed && Date.now() - startTime < 5000) {
+            // Small delay
+          }
+          
+          return img.complete ? img.onload() : null;
+        })()
+        `
+      }, (result) => {
+        if (chrome.runtime.lastError || !result || !result[0]) {
+          sendSocketMessage({
+            session: event.session,
+            error: chrome.runtime.lastError ? chrome.runtime.lastError.message : 'Failed to crop image'
+          });
+          return;
+        }
+
+        const base64Data = result[0].replace(/^data:image\/(png|jpeg|webp);base64,/, '');
+        sendSocketMessage({
+          session: event.session,
+          data: base64Data
+        });
+      });
     });
-  });
-},
+      } else {
+        chrome.tabs.captureVisibleTab(null, captureOptions, (dataUrl) => {
+          if (chrome.runtime.lastError) {
+            sendSocketMessage({
+              session: event.session,
+              error: chrome.runtime.lastError.message
+            });
+            return;
+          }
+
+          const base64Data = dataUrl.replace(/^data:image\/(png|jpeg|webp);base64,/, '');
+          sendSocketMessage({
+            session: event.session,
+            data: base64Data
+          });
+        });
+      }
+    },
 
 
   };

@@ -8,9 +8,10 @@ async function main() {
     await browser.close()
     const browser = await PearBrowser({
         profileDir: "./profile",
-        debug: true
+        debug: true,
+        muteaudio: true,
     });
-    browser.Events.on("tabcreated", (msg) => {
+    browser.on("tabcreated", (msg) => {
         console.log("[Pear] Tab oluşturuldu:", JSON.stringify(msg));
     });
 
@@ -28,7 +29,11 @@ await tab.click("#clickArea");
 }
 
 
-
+/*
+    await tab.waitForSelector("h1");
+    const title = await tab.evaluate(() => document.querySelector("h1").innerText);
+    console.log("Başlık:", title);
+*/
 
 /*
     await tab.waitForSelector("#dropdown");
