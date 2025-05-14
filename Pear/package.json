@@ -1,6 +1,6 @@
 {
     "name": "pear-browser",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "description": "A lightweight alternative to Puppeteer for browser automation",
     "main": "index.js",
     "scripts": {

@@ -263,7 +263,7 @@ p code, li code {
   <div class="layout">
     <nav class="sidebar">
       <div class="logo">
-        <h1>🍐 pear-browser</h1>
+        <h1>🍐 Pear</h1>
         <p class="tagline">Browser Automation</p>
       </div>
       <ul class="nav-links">
@@ -313,10 +313,10 @@ p code, li code {
       <section id="getting-started" class="section">
         <h2>Getting Started</h2>
         <p>Here's a simple example to get started with pear-browser:</p>
-        <pre><code class="language-javascript">const pear-browser = require("pear-browser");
+        <pre><code class="language-javascript">const pearBrowser = require("pear-browser");
 
 async function main() {
-  const browser = await pear-browser({
+  const browser = await pearBrowser({
     useChromium: true
   });
 
@@ -556,10 +556,10 @@ await browser.setCookies([
         <h2>Examples</h2>
         
         <h3>Basic Navigation</h3>
-        <pre><code class="language-javascript">const pear-browser = require("pear-browser");
+        <pre><code class="language-javascript">const pearBrowser = require("pear-browser");
 
 async function main() {
-  const browser = await pear-browser({ useChromium: true });
+  const browser = await pearBrowser({ useChromium: true });
   const page = await browser.newPage("https://example.com");
   
   // Wait for a specific element
@@ -575,10 +575,10 @@ async function main() {
 main().catch(console.error);</code></pre>
 
         <h3>Form Submission</h3>
-        <pre><code class="language-javascript">const pear-browser = require("pear-browser");
+        <pre><code class="language-javascript">const pearBrowser = require("pear-browser");
 
 async function main() {
-  const browser = await pear-browser({ useChromium: true });
+  const browser = await pearBrowser({ useChromium: true });
   const page = await browser.newPage("https://example.com/login");
   
   // Fill out form
@@ -596,11 +596,11 @@ async function main() {
 main().catch(console.error);</code></pre>
 
         <h3>Web Scraping</h3>
-        <pre><code class="language-javascript">const pear-browser = require("pear-browser");
+        <pre><code class="language-javascript">const pearBrowser = require("pear-browser");
 const fs = require("fs");
 
 async function main() {
-  const browser = await pear-browser({ useChromium: true });
+  const browser = await pearBrowser({ useChromium: true });
   const page = await browser.newPage("https://news-site.com");
   
   // Extract article data
@@ -622,7 +622,7 @@ async function main() {
 main().catch(console.error);</code></pre>
 
         <h3>With Express Server Integration</h3>
-        <pre><code class="language-javascript">const pear-browser = require("pear-browser");
+        <pre><code class="language-javascript">const pearBrowser = require("pear-browser");
 const express = require("express");
 const http = require("http");
 
@@ -638,7 +638,7 @@ async function main() {
     console.log(`Server running on port 3000`);
   });
   
-  const browser = await pear-browser({
+  const browser = await pearBrowser({
     server: server,
     port: 3000,
     debug: true
@@ -728,3 +728,4 @@ main().catch(console.error);</code></pre>
  
 </body>
 </html>
+``` 
