@@ -1,6 +1,6 @@
 {
     "name": "pear-browser",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "description": "A lightweight alternative to Puppeteer for browser automation",
     "main": "index.js",
     "scripts": {
@@ -23,6 +23,9 @@
     "license": "Apache-2.0",
     "engines": {
         "node": ">=14.0.0"
+    },
+    "dependencies": {
+        "ws": "^8.14.2"
     },
     "bugs": {
         "url": "https://github.com/DeveloperKubilay/Pear/issues"

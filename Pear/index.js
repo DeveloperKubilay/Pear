@@ -25,7 +25,7 @@ module.exports = async function (app) {
 
     profileDir: validateConfig(
       app.profileDir,
-      path.join(__dirname, "../profile"),
+      undefined,
       (val) => typeof val === "string"
     ),
 
@@ -51,20 +51,19 @@ module.exports = async function (app) {
 
   if (app.profileDir && typeof app.profileDir === "string") {
     app.profileDir = path.join(process.cwd(), app.profileDir);
+    if (!fs.existsSync(app.profileDir)) {
+      try {
+        fs.mkdirSync(app.profileDir, { recursive: true });
+      } catch (err) {
+        console.error(
+          `❌ [Pear] Profile creation failed file writing error: ${err.message}`
+        );
+        return;
+      }
+    }
   }
 
   const extensionDir = path.join(__dirname, "pearext");
-
-  if (!fs.existsSync(app.profileDir)) {
-    try {
-      fs.mkdirSync(app.profileDir, { recursive: true });
-    } catch (err) {
-      console.error(
-        `❌ [Pear] Profile creation failed file writing error: ${err.message}`
-      );
-      return;
-    }
-  }
 
   if (!fs.existsSync(extensionDir)) {
     console.error(
@@ -91,7 +90,6 @@ module.exports = async function (app) {
   loadAndUpdateSettings();
 
   const chromeFlags = [
-    `--user-data-dir="${app.profileDir}"`,
     `--load-extension="${extensionDir}"`,
     "--no-first-run",
     "--no-default-browser-check",
@@ -102,6 +100,9 @@ module.exports = async function (app) {
     "--start-maximized",
     "--enable-features=ExtensionsManifestV2",
   ];
+
+  if (app.profileDir)
+    chromeFlags.push(`--user-data-dir="${app.profileDir}"`);
 
   if (app.viewport.width && app.viewport.height)
     chromeFlags.push(`--window-size=${app.viewport.width},${app.viewport.height}`);
