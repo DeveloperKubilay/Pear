@@ -1,18 +1,14 @@
 {
   "manifest_version": 2,
-  "name": "Armut",
+  "name": "pearbrowser",
   "version": "1.0",
-  "description": "Basit bir Chrome uzantısı",
+  "description": "pearbrowser",
   "background": {
     "scripts": ["background.js"],
     "persistent": true
   },
   "permissions": [
-    "activeTab",
-    "scripting",
     "tabs",
-    "nativeMessaging",
-    "declarativeNetRequest",
     "webRequest",
     "webRequestBlocking",
     "cookies",
