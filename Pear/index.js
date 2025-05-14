@@ -44,8 +44,8 @@ module.exports = async function (app) {
   };
   if (app.useChromium) {
     app.browserPath = process.platform === "win32" ? path.join(__dirname, "./chrome/chrome-win64/chrome.exe") :
-      process.platform === "darwin" ? path.join(__dirname, "./chrome/mac-x64/Google Chrome") :
-        path.join(__dirname, "./chrome/linux64/chrome");
+      process.platform === "darwin" ? path.join(__dirname, "./chrome/chrome-macos/Chromium.app/Contents/MacOS/Chromium") :
+        path.join(__dirname, "./chrome/chrome-linux64/chrome");
     if (!fs.existsSync(app.browserPath)) await require("./installer").installChrome();
   }
 
