@@ -40,7 +40,14 @@ module.exports = async function (app) {
     proxy: validateConfig(app.proxy, "", (val) => typeof val === "string"),
     nosandbox: validateConfig(app.nosandbox, false, (val) => typeof val === "boolean"),
     muteaudio: validateConfig(app.muteaudio, false, (val) => typeof val === "boolean"),
+    useChromium: validateConfig(app.useChromium, false, (val) => typeof val === "boolean"),
   };
+  if (app.useChromium) {
+    app.browserPath = process.platform === "win32" ? path.join(__dirname, "./chrome/chrome-win64/chrome.exe") :
+      process.platform === "darwin" ? path.join(__dirname, "./chrome/mac-x64/Google Chrome") :
+        path.join(__dirname, "./chrome/linux64/chrome");
+    if (!fs.existsSync(app.browserPath)) await require("./installer").installChrome();
+  }
 
   if (app.profileDir && typeof app.profileDir === "string") {
     app.profileDir = path.join(process.cwd(), app.profileDir);
@@ -261,6 +268,78 @@ module.exports = async function (app) {
         if (result.error) throw new Error(result.error);
         return result.result;
       },
+      type: async (selector, text) => {
+        if (!text) {
+          text = selector;
+          selector = null;
+        }
+
+        if (selector && typeof selector !== "string") throw new Error("Selector must be a string");
+        if (typeof text !== "string") throw new Error("Text must be a string");
+
+        const result = await callbackmsg({
+          type: true,
+          selector,
+          text,
+          tab: tabId
+        });
+
+        if (result.error) throw new Error(result.error);
+        return result.result;
+      },
+      focus: async (selector) => {
+        if (typeof selector !== "string") throw new Error("Selector must be a string");
+
+        const result = await callbackmsg({
+          focus: true,
+          selector,
+          tab: tabId
+        });
+
+        if (result.error) throw new Error(result.error);
+        return result.result;
+      },
+      keyboard: {
+        press: async (key) => {
+          if (typeof key !== "string") throw new Error("Key must be a string");
+
+          const result = await callbackmsg({
+            keyboard: true,
+            action: 'press',
+            key,
+            tab: tabId
+          });
+
+          if (result.error) throw new Error(result.error);
+          return result.result;
+        },
+        down: async (key) => {
+          if (typeof key !== "string") throw new Error("Key must be a string");
+
+          const result = await callbackmsg({
+            keyboard: true,
+            action: 'down',
+            key,
+            tab: tabId
+          });
+
+          if (result.error) throw new Error(result.error);
+          return result.result;
+        },
+        up: async (key) => {
+          if (typeof key !== "string") throw new Error("Key must be a string");
+
+          const result = await callbackmsg({
+            keyboard: true,
+            action: 'up',
+            key,
+            tab: tabId
+          });
+
+          if (result.error) throw new Error(result.error);
+          return result.result;
+        }
+      },
       mouse: {
         wheel: async (x) => {
           if (typeof x != "object" || x === null || Array.isArray(x)) x = {};
@@ -271,6 +350,46 @@ module.exports = async function (app) {
             wheel: true,
             deltaX,
             deltaY,
+            tab: tabId
+          });
+        },
+        click: async (x, y) => {
+          if (typeof x !== "number" || typeof y !== "number")
+            throw new Error("X and Y coordinates must be numbers");
+          return await callbackmsg({
+            mouse: true,
+            click: true,
+            x,
+            y,
+            tab: tabId
+          });
+        },
+        move: async (x, y) => {
+          if (typeof x !== "number" || typeof y !== "number")
+            throw new Error("X and Y coordinates must be numbers");
+          return await callbackmsg({
+            mouse: true,
+            move: true,
+            x,
+            y,
+            tab: tabId
+          });
+        },
+        down: async (options = {}) => {
+          const button = options.button || 0; // 0=left, 1=middle, 2=right
+          return await callbackmsg({
+            mouse: true,
+            down: true,
+            button,
+            tab: tabId
+          });
+        },
+        up: async (options = {}) => {
+          const button = options.button || 0; // 0=left, 1=middle, 2=right
+          return await callbackmsg({
+            mouse: true,
+            up: true,
+            button,
             tab: tabId
           });
         }
@@ -500,6 +619,7 @@ module.exports = async function (app) {
         }
         return result.data ? Buffer.from(result.data, 'base64') : null;
       },
+
 
 
     }

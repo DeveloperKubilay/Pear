@@ -148,6 +148,108 @@ chrome.runtime.onInstalled.addListener(async () => {
           sendSocketMessage({ session: event.session, result });
         });
       }
+      else if (event.click) {
+        chrome.tabs.executeScript(event.tab, {
+          code: `
+            (function() {
+              try {
+                const mouseEvent = new MouseEvent('click', {
+                  bubbles: true,
+                  cancelable: true,
+                  view: window,
+                  clientX: ${event.x},
+                  clientY: ${event.y}
+                });
+                
+                document.elementFromPoint(${event.x}, ${event.y})?.dispatchEvent(mouseEvent);
+                return true;
+              } catch(e) {
+                return { error: e.message };
+              }
+            })()
+          `
+        }, (result) => {
+          sendSocketMessage({ session: event.session, result: result && result[0] });
+        });
+      }
+      else if (event.move) {
+        chrome.tabs.executeScript(event.tab, {
+          code: `
+            (function() {
+              try {
+                const moveEvent = new MouseEvent('mousemove', {
+                  bubbles: true,
+                  cancelable: true,
+                  view: window,
+                  clientX: ${event.x},
+                  clientY: ${event.y}
+                });
+                
+                document.elementFromPoint(${event.x}, ${event.y})?.dispatchEvent(moveEvent);
+                return true;
+              } catch(e) {
+                return { error: e.message };
+              }
+            })()
+          `
+        }, (result) => {
+          sendSocketMessage({ session: event.session, result: result && result[0] });
+        });
+      }
+      else if (event.down) {
+        chrome.tabs.executeScript(event.tab, {
+          code: `
+            (function() {
+              try {
+                const downEvent = new MouseEvent('mousedown', {
+                  bubbles: true,
+                  cancelable: true,
+                  view: window,
+                  button: ${event.button || 0},
+                  buttons: 1 << ${event.button || 0},
+                  clientX: window._mouseX || 0,
+                  clientY: window._mouseY || 0
+                });
+                
+                const element = document.elementFromPoint(window._mouseX || 0, window._mouseY || 0);
+                element?.dispatchEvent(downEvent);
+                return true;
+              } catch(e) {
+                return { error: e.message };
+              }
+            })()
+          `
+        }, (result) => {
+          sendSocketMessage({ session: event.session, result: result && result[0] });
+        });
+      }
+      else if (event.up) {
+        chrome.tabs.executeScript(event.tab, {
+          code: `
+            (function() {
+              try {
+                const upEvent = new MouseEvent('mouseup', {
+                  bubbles: true,
+                  cancelable: true,
+                  view: window,
+                  button: ${event.button || 0},
+                  buttons: 0,
+                  clientX: window._mouseX || 0,
+                  clientY: window._mouseY || 0
+                });
+                
+                const element = document.elementFromPoint(window._mouseX || 0, window._mouseY || 0);
+                element?.dispatchEvent(upEvent);
+                return true;
+              } catch(e) {
+                return { error: e.message };
+              }
+            })()
+          `
+        }, (result) => {
+          sendSocketMessage({ session: event.session, result: result && result[0] });
+        });
+      }
     },
 
     setViewport: (event) => {
@@ -620,8 +722,258 @@ chrome.runtime.onInstalled.addListener(async () => {
       });
     },
 
+    type: (event) => {
+      const { tab, selector, text } = event;
 
-  };
+      let code;
+      if (selector) {
+        code = `
+        (function() {
+          try {
+            const element = document.querySelector("${selector.replace(/"/g, '\\"')}");
+            if (!element) return { error: "Element not found" };
+            
+            element.focus();
+            
+            // Clear existing content if it's an input or textarea
+            if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+              element.value = '';
+            }
+            
+            // Send individual keystrokes
+            const text = "${text.replace(/"/g, '\\"')}";
+            for (let i = 0; i < text.length; i++) {
+              const char = text[i];
+              
+              // Create keyboard events
+              const keyDown = new KeyboardEvent('keydown', {
+                key: char,
+                code: 'Key' + char.toUpperCase(),
+                bubbles: true,
+                cancelable: true
+              });
+              
+              const keyPress = new KeyboardEvent('keypress', {
+                key: char,
+                code: 'Key' + char.toUpperCase(),
+                bubbles: true,
+                cancelable: true
+              });
+              
+              const keyUp = new KeyboardEvent('keyup', {
+                key: char,
+                code: 'Key' + char.toUpperCase(),
+                bubbles: true,
+                cancelable: true
+              });
+              
+              element.dispatchEvent(keyDown);
+              element.dispatchEvent(keyPress);
+              
+              // Update value for input elements
+              if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+                element.value += char;
+                // Trigger input event
+                const inputEvent = new Event('input', { bubbles: true });
+                element.dispatchEvent(inputEvent);
+              }
+              
+              element.dispatchEvent(keyUp);
+            }
+            
+            // Trigger change event
+            const changeEvent = new Event('change', { bubbles: true });
+            element.dispatchEvent(changeEvent);
+            
+            return { success: true };
+          } catch (e) {
+            return { error: e.message };
+          }
+        })()
+      `;
+      } else {
+        code = `
+        (function() {
+          try {
+            const element = document.activeElement;
+            
+            // Send individual keystrokes
+            const text = "${text.replace(/"/g, '\\"')}";
+            for (let i = 0; i < text.length; i++) {
+              const char = text[i];
+              
+              // Create keyboard events
+              const keyDown = new KeyboardEvent('keydown', {
+                key: char,
+                code: 'Key' + char.toUpperCase(),
+                bubbles: true,
+                cancelable: true
+              });
+              
+              const keyPress = new KeyboardEvent('keypress', {
+                key: char,
+                code: 'Key' + char.toUpperCase(),
+                bubbles: true,
+                cancelable: true
+              });
+              
+              const keyUp = new KeyboardEvent('keyup', {
+                key: char,
+                code: 'Key' + char.toUpperCase(),
+                bubbles: true,
+                cancelable: true
+              });
+              
+              element.dispatchEvent(keyDown);
+              element.dispatchEvent(keyPress);
+              
+              // Update value for input elements
+              if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+                element.value += char;
+                // Trigger input event
+                const inputEvent = new Event('input', { bubbles: true });
+                element.dispatchEvent(inputEvent);
+              }
+              
+              element.dispatchEvent(keyUp);
+            }
+            
+            // Trigger change event if appropriate
+            if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+              const changeEvent = new Event('change', { bubbles: true });
+              element.dispatchEvent(changeEvent);
+            }
+            
+            return { success: true };
+          } catch (e) {
+            return { error: e.message };
+          }
+        })()
+      `;
+      }
+
+      chrome.tabs.executeScript(tab, { code }, (result) => {
+        sendSocketMessage({
+          session: event.session,
+          result: result && result[0]
+        });
+      });
+    },
+    focus: (event) => {
+      const { tab, selector } = event;
+
+      chrome.tabs.executeScript(tab, {
+        code: `
+          (function() {
+            try {
+              const element = document.querySelector("${selector.replace(/"/g, '\\"')}");
+              if (!element) return { error: "Element not found" };
+              
+              element.focus();
+              return { success: true };
+            } catch (e) {
+              return { error: e.message };
+            }
+          })()
+        `
+      }, (result) => {
+        sendSocketMessage({
+          session: event.session,
+          result: result && result[0]
+        });
+      });
+    },
+    keyboard: (event) => {
+      const { tab, action, key } = event;
+
+      // Improved key code mapping
+      const getKeyCode = (key) => {
+        const specialKeys = {
+          'Enter': 'Enter',
+          'Tab': 'Tab',
+          'Escape': 'Escape',
+          'ArrowLeft': 'ArrowLeft',
+          'ArrowRight': 'ArrowRight',
+          'ArrowUp': 'ArrowUp',
+          'ArrowDown': 'ArrowDown',
+          'Backspace': 'Backspace',
+          'Delete': 'Delete',
+          'Home': 'Home',
+          'End': 'End',
+          'PageUp': 'PageUp',
+          'PageDown': 'PageDown'
+        };
+
+        return specialKeys[key] || (key.length === 1 ? `Key${key.toUpperCase()}` : key);
+      };
+
+      const code = `
+    (function() {
+      try {
+        const element = document.activeElement;
+        const keyValue = ${JSON.stringify(key)};
+        const keyCode = ${JSON.stringify(getKeyCode(key))};
+        
+        const createKeyboardEvent = (type) => {
+          return new KeyboardEvent(type, {
+            key: keyValue,
+            code: keyCode,
+            bubbles: true,
+            cancelable: true,
+            composed: true,
+            view: window
+          });
+        };
+        
+        // Common keys handled specially
+        if (keyValue === "Enter" && element.tagName === "INPUT") {
+          if (element.form) {
+            element.form.submit();
+          }
+        }
+        
+        if (${JSON.stringify(action)} === 'press') {
+          element.dispatchEvent(createKeyboardEvent('keydown'));
+          element.dispatchEvent(createKeyboardEvent('keypress'));
+          element.dispatchEvent(createKeyboardEvent('keyup'));
+          
+          // Special handling for input fields
+          if ((element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') && keyValue.length === 1) {
+            element.value += keyValue;
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+            element.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        } 
+        else if (${JSON.stringify(action)} === 'down') {
+          element.dispatchEvent(createKeyboardEvent('keydown'));
+        } 
+        else if (${JSON.stringify(action)} === 'up') {
+          element.dispatchEvent(createKeyboardEvent('keyup'));
+        }
+        
+        return { success: true, activeElement: element.tagName };
+      } catch (e) {
+        return { error: e.message, stack: e.stack };
+      }
+    })()
+  `;
+
+      chrome.tabs.executeScript(tab, { code }, (result) => {
+        if (chrome.runtime.lastError) {
+          sendSocketMessage({
+            session: event.session,
+            error: chrome.runtime.lastError.message
+          });
+          return;
+        }
+
+        sendSocketMessage({
+          session: event.session,
+          result: result && result[0]
+        });
+      });
+    },
+  }
 
 
   function handleTabLoading(tabId, sessionId) {
