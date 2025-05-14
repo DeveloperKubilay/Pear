@@ -1,7 +1,7 @@
-const PearBrowser = require("./Pear")
+const pear-browser = require("./Pear")
 
 async function main() {
-const browser = await PearBrowser({
+const browser = await pear-browser({
     profileDir: "./profile",
     debug: false,
     nosandbox: true,

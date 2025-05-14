@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
-  "name": "pearbrowser",
+  "name": "pear-browser",
   "version": "1.0",
-  "description": "pearbrowser",
+  "description": "pear-browser",
   "background": {
     "scripts": ["background.js"],
     "persistent": true

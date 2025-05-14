@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PearBrowser Browser Automation - Documentation</title>
+  <title>pear-browser Browser Automation - Documentation</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -263,7 +263,7 @@ p code, li code {
   <div class="layout">
     <nav class="sidebar">
       <div class="logo">
-        <h1>🍐 PearBrowser</h1>
+        <h1>🍐 pear-browser</h1>
         <p class="tagline">Browser Automation</p>
       </div>
       <ul class="nav-links">
@@ -287,8 +287,8 @@ p code, li code {
 
     <main class="content">
       <section id="introduction" class="section">
-        <h2>Introduction to PearBrowser</h2>
-        <p>PearBrowser is a powerful browser automation library for Node.js, similar to Puppeteer but with more direct control over Chrome/Chromium. PearBrowser allows you to control the browser programmatically, making it perfect for:</p>
+        <h2>Introduction to pear-browser</h2>
+        <p>pear-browser is a powerful browser automation library for Node.js, similar to Puppeteer but with more direct control over Chrome/Chromium. pear-browser allows you to control the browser programmatically, making it perfect for:</p>
         <ul>
           <li>Web scraping and data extraction</li>
           <li>Automated testing of web applications</li>
@@ -296,27 +296,27 @@ p code, li code {
           <li>Automating form submission</li>
           <li>Browser behavior testing</li>
         </ul>
-        <p>PearBrowser works by launching a Chrome instance and communicating with it via WebSocket, allowing fine-grained control over browser actions and page interactions.</p>
+        <p>pear-browser works by launching a Chrome instance and communicating with it via WebSocket, allowing fine-grained control over browser actions and page interactions.</p>
       </section>
 
       <section id="installation" class="section">
         <h2>Installation</h2>
-        <p>Install PearBrowser using npm:</p>
-        <pre><code class="language-bash">npm install PearBrowser</code></pre>
+        <p>Install pear-browser using npm:</p>
+        <pre><code class="language-bash">npm install pear-browser</code></pre>
         
         <div class="info-box">
           <h4>Note:</h4>
-          <p>PearBrowser requires a Chrome or Chromium installation. You can use your system's Chrome installation or let PearBrowser download and use a bundled Chromium version.</p>
+          <p>pear-browser requires a Chrome or Chromium installation. You can use your system's Chrome installation or let pear-browser download and use a bundled Chromium version.</p>
         </div>
       </section>
 
       <section id="getting-started" class="section">
         <h2>Getting Started</h2>
-        <p>Here's a simple example to get started with PearBrowser:</p>
-        <pre><code class="language-javascript">const PearBrowser = require("PearBrowser");
+        <p>Here's a simple example to get started with pear-browser:</p>
+        <pre><code class="language-javascript">const pear-browser = require("pear-browser");
 
 async function main() {
-  const browser = await PearBrowser({
+  const browser = await pear-browser({
     useChromium: true
   });
 
@@ -333,8 +333,8 @@ main().catch(console.error);</code></pre>
       <section id="browser-api" class="section">
         <h2>Browser API</h2>
         <h3>Initialization Options</h3>
-        <p>When initializing PearBrowser, you can provide the following options:</p>
-        <pre><code class="language-javascript">const browser = await PearBrowser({
+        <p>When initializing pear-browser, you can provide the following options:</p>
+        <pre><code class="language-javascript">const browser = await pear-browser({
   browserPath: "path/to/chrome",  // Custom Chrome path
   profileDir: "./profile",        // Chrome profile directory
   args: ["--disable-gpu"],        // Additional Chrome arguments
@@ -384,7 +384,7 @@ main().catch(console.error);</code></pre>
         </ul>
 
         <h3>Browser Events</h3>
-        <p>PearBrowser emits events you can listen to:</p>
+        <p>pear-browser emits events you can listen to:</p>
         <pre><code class="language-javascript">browser.on("tabcreated", (tab) => {
   console.log("New tab created:", tab);
 });</code></pre>
@@ -481,7 +481,7 @@ await page.keyboard.up("Shift");</code></pre>
 
       <section id="select-api" class="section">
         <h2>Select API</h2>
-        <p>PearBrowser provides a specialized API for working with select elements:</p>
+        <p>pear-browser provides a specialized API for working with select elements:</p>
         <pre><code class="language-javascript">// Get all options in a select
 const options = await page.select.getOptions("#dropdown");
 console.log("Available options:", options);
@@ -519,7 +519,7 @@ const screenshotBuffer = await page.screenshot();</code></pre>
 
       <section id="file-upload" class="section">
         <h2>File Upload</h2>
-        <p>PearBrowser supports file uploads and drag-and-drop file operations:</p>
+        <p>pear-browser supports file uploads and drag-and-drop file operations:</p>
         <pre><code class="language-javascript">// Upload a file using a file input
 await page.uploadFile("#fileInput", "/path/to/file.jpg");
 // Multiple files
@@ -556,10 +556,10 @@ await browser.setCookies([
         <h2>Examples</h2>
         
         <h3>Basic Navigation</h3>
-        <pre><code class="language-javascript">const PearBrowser = require("PearBrowser");
+        <pre><code class="language-javascript">const pear-browser = require("pear-browser");
 
 async function main() {
-  const browser = await PearBrowser({ useChromium: true });
+  const browser = await pear-browser({ useChromium: true });
   const page = await browser.newPage("https://example.com");
   
   // Wait for a specific element
@@ -575,10 +575,10 @@ async function main() {
 main().catch(console.error);</code></pre>
 
         <h3>Form Submission</h3>
-        <pre><code class="language-javascript">const PearBrowser = require("PearBrowser");
+        <pre><code class="language-javascript">const pear-browser = require("pear-browser");
 
 async function main() {
-  const browser = await PearBrowser({ useChromium: true });
+  const browser = await pear-browser({ useChromium: true });
   const page = await browser.newPage("https://example.com/login");
   
   // Fill out form
@@ -596,11 +596,11 @@ async function main() {
 main().catch(console.error);</code></pre>
 
         <h3>Web Scraping</h3>
-        <pre><code class="language-javascript">const PearBrowser = require("PearBrowser");
+        <pre><code class="language-javascript">const pear-browser = require("pear-browser");
 const fs = require("fs");
 
 async function main() {
-  const browser = await PearBrowser({ useChromium: true });
+  const browser = await pear-browser({ useChromium: true });
   const page = await browser.newPage("https://news-site.com");
   
   // Extract article data
@@ -622,7 +622,7 @@ async function main() {
 main().catch(console.error);</code></pre>
 
         <h3>With Express Server Integration</h3>
-        <pre><code class="language-javascript">const PearBrowser = require("PearBrowser");
+        <pre><code class="language-javascript">const pear-browser = require("pear-browser");
 const express = require("express");
 const http = require("http");
 
@@ -631,14 +631,14 @@ async function main() {
   const server = http.createServer(app);
   
   app.get('/', (req, res) => {
-    res.send('PearBrowser Browser API Server');
+    res.send('pear-browser Browser API Server');
   });
   
   server.listen(3000, () => {
     console.log(`Server running on port 3000`);
   });
   
-  const browser = await PearBrowser({
+  const browser = await pear-browser({
     server: server,
     port: 3000,
     debug: true

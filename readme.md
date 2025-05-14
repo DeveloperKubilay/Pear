@@ -1,9 +1,9 @@
-# 🍐 PearBrowser Browser Automation
+# 🍐 pear-browser Browser Automation
 
 > Powerful browser automation for Node.js. Automate Chrome/Chromium with ease.  
-> For comprehensive documentation and examples, visit [our official website](https://developerkubilay.github.io/PearBrowser/).
+> For comprehensive documentation and examples, visit [our official website](https://developerkubilay.github.io/pear-browser/).
 
-PearBrowser is a powerful Node.js library for browser automation that provides programmatic control over Chrome/Chromium. It's designed to be intuitive and flexible, allowing you to automate browser tasks with minimal configuration.
+pear-browser is a powerful Node.js library for browser automation that provides programmatic control over Chrome/Chromium. It's designed to be intuitive and flexible, allowing you to automate browser tasks with minimal configuration.
 
 ## Features
 
@@ -19,16 +19,16 @@ PearBrowser is a powerful Node.js library for browser automation that provides p
 ## Installation
 
 ```bash
-npm install PearBrowser
+npm install pear-browser
 ```
 
 ## Basic Usage
 
 ```javascript
-const PearBrowser = require("PearBrowser");
+const pear-browser = require("pear-browser");
 
 async function main() {
-  const browser = await PearBrowser({
+  const browser = await pear-browser({
     useChromium: true
   });
 
@@ -45,7 +45,7 @@ main().catch(console.error);
 ## Configuration Options
 
 ```javascript
-const browser = await PearBrowser({
+const browser = await pear-browser({
   // Browser executable path (defaults to system Chrome)
   browserPath: "path/to/chrome", 
   
@@ -279,11 +279,11 @@ await page.dragAndDropFile("/path/to/file.jpg", "#dropzone");
 ### Web Scraping
 
 ```javascript
-const PearBrowser = require("PearBrowser");
+const pear-browser = require("pear-browser");
 const fs = require("fs");
 
 async function main() {
-  const browser = await PearBrowser({ useChromium: true });
+  const browser = await pear-browser({ useChromium: true });
   const page = await browser.newPage("https://news-site.com");
   
   // Extract article data
@@ -308,10 +308,10 @@ main().catch(console.error);
 ### Form Submission
 
 ```javascript
-const PearBrowser = require("PearBrowser");
+const pear-browser = require("pear-browser");
 
 async function main() {
-  const browser = await PearBrowser({ useChromium: true });
+  const browser = await pear-browser({ useChromium: true });
   const page = await browser.newPage("https://example.com/login");
   
   // Fill out form
@@ -332,7 +332,7 @@ main().catch(console.error);
 ### Express Server Integration
 
 ```javascript
-const PearBrowser = require("PearBrowser");
+const pear-browser = require("pear-browser");
 const express = require("express");
 const http = require("http");
 
@@ -341,14 +341,14 @@ async function main() {
   const server = http.createServer(app);
   
   app.get('/', (req, res) => {
-    res.send('PearBrowser Browser API Server');
+    res.send('pear-browser Browser API Server');
   });
   
   server.listen(3000, () => {
     console.log(`Server running on port 3000`);
   });
   
-  const browser = await PearBrowser({
+  const browser = await pear-browser({
     server: server,
     port: 3000,
     debug: true
@@ -364,12 +364,12 @@ main().catch(console.error);
 
 ---
 
-# 🍐 PearBrowser Tarayıcı Otomasyonu
+# 🍐 pear-browser Tarayıcı Otomasyonu
 
 > Node.js için güçlü tarayıcı otomasyonu. Chrome/Chromium'u kolayca otomatikleştirin.  
-> Kapsamlı belgelendirme ve örnekler için [resmi web sitemizi](https://developerkubilay.github.io/PearBrowser/) ziyaret edin.
+> Kapsamlı belgelendirme ve örnekler için [resmi web sitemizi](https://developerkubilay.github.io/pear-browser/) ziyaret edin.
 
-PearBrowser, Chrome/Chromium üzerinde programatik kontrol sağlayan güçlü bir Node.js tarayıcı otomasyon kütüphanesidir. Sezgisel ve esnek bir şekilde tasarlanmış olup, minimum konfigürasyonla tarayıcı görevlerini otomatikleştirmenize olanak tanır.
+pear-browser, Chrome/Chromium üzerinde programatik kontrol sağlayan güçlü bir Node.js tarayıcı otomasyon kütüphanesidir. Sezgisel ve esnek bir şekilde tasarlanmış olup, minimum konfigürasyonla tarayıcı görevlerini otomatikleştirmenize olanak tanır.
 
 ## Özellikler
 
@@ -385,16 +385,16 @@ PearBrowser, Chrome/Chromium üzerinde programatik kontrol sağlayan güçlü bi
 ## Kurulum
 
 ```bash
-npm install PearBrowser
+npm install pear-browser
 ```
 
 ## Temel Kullanım
 
 ```javascript
-const PearBrowser = require("PearBrowser");
+const pear-browser = require("pear-browser");
 
 async function main() {
-  const browser = await PearBrowser({
+  const browser = await pear-browser({
     useChromium: true
   });
 
@@ -411,7 +411,7 @@ main().catch(console.error);
 ## Yapılandırma Seçenekleri
 
 ```javascript
-const browser = await PearBrowser({
+const browser = await pear-browser({
   // Tarayıcı çalıştırılabilir dosya yolu (varsayılan: sistem Chrome'u)
   browserPath: "path/to/chrome", 
   
@@ -645,11 +645,11 @@ await page.dragAndDropFile("/path/to/file.jpg", "#dropzone");
 ### Web Scraping
 
 ```javascript
-const PearBrowser = require("PearBrowser");
+const pear-browser = require("pear-browser");
 const fs = require("fs");
 
 async function main() {
-  const browser = await PearBrowser({ useChromium: true });
+  const browser = await pear-browser({ useChromium: true });
   const page = await browser.newPage("https://news-site.com");
   
   // Makale verilerini çıkart
@@ -674,10 +674,10 @@ main().catch(console.error);
 ### Form Gönderme
 
 ```javascript
-const PearBrowser = require("PearBrowser");
+const pear-browser = require("pear-browser");
 
 async function main() {
-  const browser = await PearBrowser({ useChromium: true });
+  const browser = await pear-browser({ useChromium: true });
   const page = await browser.newPage("https://example.com/login");
   
   // Formu doldur
@@ -698,7 +698,7 @@ main().catch(console.error);
 ### Express Sunucu Entegrasyonu
 
 ```javascript
-const PearBrowser = require("PearBrowser");
+const pear-browser = require("pear-browser");
 const express = require("express");
 const http = require("http");
 
@@ -707,14 +707,14 @@ async function main() {
   const server = http.createServer(app);
   
   app.get('/', (req, res) => {
-    res.send('PearBrowser Tarayıcı API Sunucusu');
+    res.send('pear-browser Tarayıcı API Sunucusu');
   });
   
   server.listen(3000, () => {
     console.log(`Sunucu 3000 portunda çalışıyor`);
   });
   
-  const browser = await PearBrowser({
+  const browser = await pear-browser({
     server: server,
     port: 3000,
     debug: true
