@@ -9,16 +9,9 @@ const browser = await pearBrowser({
     autoclose: false,
 });
 
-const newtab = await browser.newPage("https://www.google.com/search?q=sa");
+const newtab = await browser.newPage("https://www.google.com/search?q=test");
 
 
-// Use keyboard actions
-// Example usage
-await newtab.focus("input[name='q']"); // Focus on Google's search input field
-await newtab.type("search query");  // Type into the focused element
-await newtab.keyboard.press("Enter");
-await newtab.keyboard.down("ArrowDown");
-await newtab.keyboard.up("ArrowDown");
 }
 main().catch((error) => {
     console.error("Hata:", error);

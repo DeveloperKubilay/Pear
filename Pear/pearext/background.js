@@ -973,6 +973,36 @@ chrome.runtime.onInstalled.addListener(async () => {
         });
       });
     },
+    waitForNavigation: (event) => {
+      const { tab, timeout = 30000 } = event;
+      const startTime = Date.now();
+      
+      let navigationCompleted = false;
+      
+      const listener = (updatedTabId, changeInfo, updatedTab) => {
+        if (updatedTabId === tab && changeInfo.status === 'complete') {
+          navigationCompleted = true;
+          chrome.tabs.onUpdated.removeListener(listener);
+          sendSocketMessage({ 
+            session: event.session, 
+            success: true,
+            url: updatedTab.url
+          });
+        }
+      };
+      
+      chrome.tabs.onUpdated.addListener(listener);
+      
+      setTimeout(() => {
+        if (!navigationCompleted) {
+          chrome.tabs.onUpdated.removeListener(listener);
+          sendSocketMessage({ 
+            session: event.session, 
+            error: `Navigation timeout exceeded: ${timeout}ms`
+          });
+        }
+      }, timeout);
+    },
   }
 
 
@@ -1012,25 +1042,4 @@ chrome.runtime.onInstalled.addListener(async () => {
 
   connectWebSocket();
 
-  // Diğer kodlar korundu, yorum satırlarıyla kapatılmış kısımlar
-  /*
-    chrome.tabs.sendMessage(tabs[0].id, 
-            {
-                session:Date.now(),
-                message: "messageSent"
-            }, function(response) {
-                console.log("Mesaj gönderildi:", response);
-              socket.send(`${JSON.stringify({session:response.session})}`);
-            })
-  */
-
-  /*
-        chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-          if (request.type === "selam") {
-            console.log("Content script'ten geldi:", request.msg);
-        
-            sendResponse("Eyvallah, aldım kral 👑");
-          }
-          return true;
-        });*/
 });

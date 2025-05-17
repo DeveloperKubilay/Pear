@@ -620,8 +620,17 @@ module.exports = async function (app) {
         }
         return result.data ? Buffer.from(result.data, 'base64') : null;
       },
-
-
+      waitForNavigation: async (options = {}) => {
+        const timeout = options.timeout || 30000;
+        const result = await callbackmsg({
+          waitForNavigation: true,
+          tab: tabId,
+          timeout
+        });
+        
+        if (result.error) throw new Error(result.error);
+        return result.success;
+      },
 
     }
   }

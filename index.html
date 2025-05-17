@@ -426,6 +426,12 @@ await page.type("input[name='username']", "johndoe");</code></pre>
             <pre><code class="language-javascript">await page.waitForSelector(".results", { timeout: 5000 });</code></pre>
           </li>
           <li>
+            <span class="method-name">.waitForNavigation(options)</span>
+            <p>Waits for navigation to complete after actions like form submission or link clicks.</p>
+            <pre><code class="language-javascript">await page.click("#submit-button");
+await page.waitForNavigation({ timeout: 5000 });</code></pre>
+          </li>
+          <li>
             <span class="method-name">.waitForTimeout(milliseconds)</span>
             <p>Waits for the specified amount of time.</p>
             <pre><code class="language-javascript">await page.waitForTimeout(1000); // Wait for 1 second</code></pre>
@@ -728,4 +734,3 @@ main().catch(console.error);</code></pre>
  
 </body>
 </html>
-``` 
