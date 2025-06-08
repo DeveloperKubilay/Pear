@@ -1,5 +1,12 @@
 # 🍐 pear-browser Browser Automation
 
+![pear-browser](https://i.imgur.com/VFR4p6a.gif)
+
+🚨 Warning
+-This is not Puppeteer or Selenium. It doesn't use the same API!
+-Instead, this module operates by mimicking a Chrome extension, making it stealthy and hard to detect.
+-It uses a completely separate API to interact with the browser.
+
 > Powerful browser automation for Node.js. Automate Chrome/Chromium with ease.  
 > For comprehensive documentation and examples, visit [our official website](https://developerkubilay.github.io/Pear/).
 
