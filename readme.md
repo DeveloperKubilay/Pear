@@ -2,10 +2,12 @@
 
 ![pear-browser](https://i.imgur.com/VFR4p6a.gif)
 
-🚨 Warning
--This is not Puppeteer or Selenium. It doesn't use the same API!
--Instead, this module operates by mimicking a Chrome extension, making it stealthy and hard to detect.
--It uses a completely separate API to interact with the browser.
+---
+# 🚨 Warning
+#### This is **not** (Puppeteer or Selenium). It **doesn't use the same API**!
+#### This module runs as a real Chrome extension, making it stealthy and hard to detect.
+#### It uses a completely separate API to interact with the browser.
+---
 
 > Powerful browser automation for Node.js. Automate Chrome/Chromium with ease.  
 > For comprehensive documentation and examples, visit [our official website](https://developerkubilay.github.io/Pear/).
@@ -372,6 +374,13 @@ main().catch(console.error);
 ---
 
 # 🍐 pear-browser Tarayıcı Otomasyonu
+
+---
+# 🚨 Uyarı
+#### Bu **Puppeteer veya Selenium** değildir. Aynı API’leri **kullanmaz**!
+#### Bu modül gerçek bir Chrome eklentisi olarak çalışır, bu yüzden gizlidir ve tespiti zordur.
+#### Tarayıcı ile etkileşim için tamamen ayrı bir API kullanır.
+---
 
 > Node.js için güçlü tarayıcı otomasyonu. Chrome/Chromium'u kolayca otomatikleştirin.  
 > Kapsamlı belgelendirme ve örnekler için [resmi web sitemizi](https://developerkubilay.github.io/Pear/) ziyaret edin.
